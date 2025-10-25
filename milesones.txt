@@ -1,0 +1,56 @@
+Date	Day	Work Level	Theme	Checklist Item	Acceptance Goal	Difficulty	Risk/Notes	Status	Owner
+Oct-24	Fri	Work	Foundation	Repo + Next.js (JS) scaffold; minimal pages	App boots; API routes reachable	Medium	Set up lint/formatter early to avoid churn		Blessan
+Oct-24	Fri	Work	Foundation	NeonDB + Prisma schema: users, goals, transactions, notifications, pause_requests	DB schema defined	Medium	Include wallet_address (Users), batch_id/provider/network/type/meta (Transactions)		Blessan
+Oct-24	Fri	Work	Foundation	Migrations + DB connection; envs on Vercel	DB migrates cleanly	Medium	Create .env.example; verify on local + Vercel		Blessan
+Oct-24	Fri	Work	Foundation	Auth/session middleware skeleton; unified error format; rate limiting	Health endpoint OK	Medium	Add request ID + structured logs		Blessan
+Oct-25	Sat	Work	Auth + Provisioning	Integrate Privy (server + minimal client)	Login succeeds via Privy	Medium	Watch for SSR/CSR boundary with Next.js app router		Blessan
+Oct-25	Sat	Work	Auth + Provisioning	On login: create/read users (privy_id, email, wallet_address)	User record persisted	Low	Guard against duplicate users; add unique indexes		Blessan
+Oct-25	Sat	Work	Auth + Provisioning	Protected API guard (JWT/session validation)	Protected route enforced	Medium	Centralize auth middleware; test 401/403 paths		Blessan
+Oct-25	Sat	Work	Minimal UI	Login → protected blank dashboard	Blank dashboard visible post-auth	Low	Basic layout only; no styling yet		Blessan
+Oct-26	Sun	Light	2FA PIN (Backend)	Endpoints: /api/auth/2fa/setup, /api/auth/2fa/verify (hash + rate-limit)	2FA endpoints working	Medium	Use bcrypt/argon2; throttle attempts		Blessan
+Oct-26	Sun	Light	2FA PIN (Backend)	Enforce 2FA before protected APIs	Verified users reach protected area	Medium	Store 2FA state; return 403 until verified		Blessan
+Oct-27	Mon	Work	Goals Service	POST /api/goals (₹100 min, >0 target, ≤10y ETA)	Goal created with validations	Medium	Validate currency/amounts server-side		Blessan
+Oct-27	Mon	Work	Goals Service	GET /api/goals (list), GET /api/goals/:id (details)	Goals retrievable	Low	Pagination later; keep simple now		Blessan
+Oct-27	Mon	Work	Goals Service	PATCH /api/goals/:id (amount/frequency); status active|paused|completed	Goal updates persist	Medium	Use enum; audit updated_at		Blessan
+Oct-27	Mon	Work	Frontend sanity	Minimal form hits POST /api/goals and renders list	Round-trip works via UI	Low	Catches CORS/state issues early		Blessan
+Oct-27	Mon	Reflection	Reflection 1	Auth/2FA/Goals review; note blockers	Notes recorded	Low	Identify risks before swaps/on-ramp		Blessan
+Oct-28	Tue	Work	Price + Progress	Price service (CoinGecko) + in-memory cache	Prices fetched/cached	Medium	Cache TTL; fallback on API failure		Blessan
+Oct-28	Tue	Work	Price + Progress	GET /api/price/current?coins=BTC,ETH,SOL; basic /api/price/historical	Endpoints return data	Low	Normalize coin IDs		Blessan
+Oct-28	Tue	Work	Price + Progress	GET /api/progress/:goalId (percent, totals, ETA)	Progress computed	Medium	Unit-test math, edge cases		Blessan
+Oct-28	Tue	Buffer	Buffer/Debug	Stabilize endpoints; resolve blockers from Reflection 1	Critical issues cleared	Low	Time reserved for integration bugs		Blessan
+Oct-29	Wed	Work	OnRamp Simulation	Devnet app wallet setup (secure key); POST /api/onramp/simulate	Devnet SOL transfer to user wallet returns signature	Medium	Secure dev wallet; rate-limit; store key in env		Blessan
+Oct-29	Wed	Work	Swap (Jupiter)	Integrate Jupiter (devnet); POST /api/swap/execute (SOL/USDC → goal token)	Swap executes; returns signature + price	Medium	Handle slippage; check route failures		Blessan
+Oct-29	Wed	Work	Transactions	Insert transactions with batch_id/type/provider/network/meta	Records persisted for transfer + swap	Low	Ensure atomic pair creation and linkage		Blessan
+Oct-29	Wed	Work	Idempotency	Idempotent handling via batch_id dedupe for simulate/swap	Duplicates prevented	Medium	Upsert or unique(batch_id,type)		Blessan
+Oct-30	Thu	Work	History API	GET /api/history (group by batch_id; filter by type/date/token)	History returns paired onramp+swap	Low	Server-side sort/limit		Blessan
+Oct-30	Thu	Work	Progress Updates	Update goal invested_amount after swap; recompute progress	Progress reflects latest swap	Low	Wrap updates in transaction		Blessan
+Oct-30	Thu	Work	Error Handling	Consistent error schema; retry guidance; slippage config	Errors clear; retries safe	Medium	Map provider errors cleanly		Blessan
+Oct-31	Fri	Work	Checkout/UI (Devnet)	"Simulate Buy" button: call /api/onramp/simulate → /api/swap/execute; show explorer links	UI confirms transfer+swap and refreshes history/progress	Medium	Block on auth/2FA; show non-blocking success banner		Blessan
+Nov-01	Sat	Work	Security + Docs + User	Server-wide input validation; error schema; logging	Validation/logging in place	Medium	Central error handler; Zod/Valibot (JS)		Blessan
+Nov-01	Sat	Work	Security + Docs + User	Indexes, query limits, n+1 checks	Perf guardrails set	Low	Add DB indexes; limit list endpoints		Blessan
+Nov-01	Sat	Work	Security + Docs + User	GET /api/user (profile), PATCH /api/user (notification prefs)	User APIs working	Low	Protect PII; return minimal fields		Blessan
+Nov-01	Sat	Work	Docs	Readme: devnet simulation steps; envs; Jupiter + Privy setup	Docs available	Low	Note OnMeta prod planned later; no KYC in app		Blessan
+Nov-01	Sat	Reflection	Reflection 2	Backend feature-complete (incl. devnet sim) review	Notes recorded	Low	List remaining risks		Blessan
+Nov-02	Sun	Light	Seeds + Smoke	Seed: 1 user + 1 active goal	Seed runs	Low	Deterministic seed IDs		Blessan
+Nov-02	Sun	Light	Seeds + Smoke	Simulate: transfer → swap → DB updates (devnet)	E2E passes (devnet sim)	Medium	Test idempotency via batch_id		Blessan
+Nov-02	Sun	Light	Seeds + Smoke	Verify idempotent simulate/swap flow	Idempotency confirmed	Medium	Use unique keys + upserts		Blessan
+Nov-03	Mon	Work	Minimal Frontend Wiring	Auth flow: login → 2FA forms → dashboard shell	Auth UI flows	Low	Keep state management simple		Blessan
+Nov-03	Mon	Work	Minimal Frontend Wiring	Goal wizard (plain forms) → POST /api/goals	Goal creation via UI	Low	Validate errors inline		Blessan
+Nov-03	Mon	Work	Minimal Frontend Wiring	Dashboard fetch: goals + progress + history	Dashboard shows data	Low	Handle empty states		Blessan
+Nov-03	Mon	Buffer	Buffer/Debug	Stabilize UI/backend integration before feature wiring	Critical issues cleared	Low	Time reserved for wiring bugs		Blessan
+Nov-04	Tue	Work	Actions UI + History + Settings	Simulate On-Ramp (Devnet), Pause/Resume buttons, banners	Actions wired	Medium	Guard actions behind states		Blessan
+Nov-04	Tue	Work	Actions UI + History + Settings	History table → /api/history (latest 10, grouped by batch_id)	History visible	Low	Server-side sort/limit		Blessan
+Nov-04	Tue	Work	Actions UI + History + Settings	Settings: profile + notification toggle	Settings editable	Low	Persist preferences cleanly		Blessan
+Nov-05	Wed	No Work	Exams	Exams	Exams	Exams	Exams		Blessan
+Nov-06	Thu	No Work	Exams	Exams	Exams	Exams	Exams		Blessan
+Nov-07	Fri	Work	Test + Deploy + Fixes	Unit tests (validations/progress/swap quoting)	Tests passing	Medium	Focus on critical paths only		Blessan
+Nov-07	Fri	Work	Test + Deploy + Fixes	E2E smoke: login → 2FA → goal → simulate buy (devnet) → swap → progress → pause	E2E green	High	Run on staging with devnet RPC		Blessan
+Nov-07	Fri	Work	Test + Deploy + Fixes	CI on PR; staging deploy; fix critical bugs	Staging stable	Medium	Block merges on CI		Blessan
+Nov-07	Fri	Work	Test + Deploy + Fixes	Basic responsiveness (forms/dashboard)	Usable on mobile	Low	Just enough CSS tweaks		Blessan
+Nov-07	Fri	Reflection	Reflection 3	Ready for final pass; list polish items	Polish list ready	Low	Prioritize must-fix bugs		Blessan
+Nov-08	Sat	No Work	Exams	Exams	Exams	Exams	Exams		Blessan
+Nov-09	Sun	No Work	Exams	Exams	Exams	Exams	Exams		Blessan
+Nov-10	Mon	Work	Finalize	Completion UI (simple celebrate); copy review	Completion state visible	Low	Keep scope small		Blessan
+Nov-10	Mon	Work	Finalize	README quickstart; known limits; next-steps (OnMeta prod)	Docs final	Low	Call out manual on-ramp; KYC by OnMeta		Blessan
+Nov-10	Mon	Work	Finalize	Final demo walkthrough + screenshots	Delivery accepted	Low	Record short Loom		Blessan
+Nov-10	Mon	Reflection	Reflection 4	Final review + lessons	Notes recorded	Low	What went well/next time		Blessan
