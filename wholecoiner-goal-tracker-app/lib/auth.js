@@ -1,68 +1,130 @@
 /**
- * Authentication utilities (Privy integration to be added)
+ * Authentication utilities with Privy integration
  */
 
+import { PrivyClient } from '@privy-io/server-auth';
 import { AuthenticationError, AuthorizationError } from './errors.js';
 import { logger } from './logger.js';
+import { prisma } from './prisma.js';
+import { getSession, setSession } from './session.js';
+import { fail } from './http.js';
+
+// Initialize Privy client
+const privyClient = new PrivyClient(
+  process.env.PRIVY_APP_ID,
+  process.env.PRIVY_APP_SECRET
+);
 
 /**
- * Verify session/JWT token (Privy integration placeholder)
+ * Verify session/JWT token using Privy
  * @param {Request} request - Next.js request object
- * @returns {Promise<{userId: string, email: string}>}
+ * @returns {Promise<{userId: string, email: string, privyId: string}>}
  */
 export async function verifySession(request) {
-  // TODO: Implement Privy JWT verification
-  // For now, this is a placeholder that will be implemented in Phase 1
-
   const authHeader = request.headers.get('authorization');
 
   if (!authHeader) {
     throw new AuthenticationError('No authorization header provided');
   }
 
-  // Placeholder - replace with actual Privy verification
-  logger.debug('Session verification placeholder', { authHeader });
+  if (!authHeader.startsWith('Bearer ')) {
+    throw new AuthenticationError('Invalid authorization header format');
+  }
 
-  return {
-    userId: 'placeholder_user_id',
-    email: 'user@example.com',
-  };
-}
+  const token = authHeader.replace('Bearer ', '');
 
-/**
- * Higher-order function to require authentication for API routes
- * @param {Function} handler - API route handler
- * @returns {Function} - Wrapped handler with auth check
- */
-export function requireAuth(handler) {
-  return async (request, context) => {
-    try {
-      const user = await verifySession(request);
+  try {
+    // Verify the Privy access token
+    const verifiedClaims = await privyClient.verifyAuthToken(token);
+    
+    logger.debug('Token verified successfully', { 
+      userId: verifiedClaims.userId 
+    });
 
-      // Attach user to request context
-      request.user = user;
+    // Get user from database to ensure they exist
+    const user = await prisma.user.findUnique({
+      where: { privyId: verifiedClaims.userId },
+      select: {
+        id: true,
+        privyId: true,
+        email: true,
+        twoFaEnabled: true,
+      },
+    });
 
-      return await handler(request, context);
-    } catch (error) {
-      if (error instanceof AuthenticationError) {
-        return new Response(
-          JSON.stringify({ error: error.message }),
-          { status: 401 }
-        );
-      }
+    if (!user) {
+      throw new AuthenticationError('User not found in database');
+    }
+
+    return {
+      userId: user.id,
+      privyId: user.privyId,
+      email: user.email,
+      twoFaEnabled: user.twoFaEnabled,
+    };
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
       throw error;
     }
-  };
+    
+    logger.error('Token verification failed', {
+      error: error.message,
+    });
+    
+    throw new AuthenticationError('Invalid or expired token');
+  }
 }
 
 /**
- * Check if user has 2FA enabled
- * @param {string} userId
- * @returns {Promise<boolean>}
+ * Require authentication - verify Privy token and get session
+ * @returns {Promise<{user: Object, sess: Object}>}
+ * @throws {Response} - 401 response if authentication fails
  */
-export async function check2FAStatus(userId) {
-  // TODO: Implement with database check
-  logger.debug('2FA status check placeholder', { userId });
-  return false;
+export async function requireAuth() {
+  const sess = getSession();
+  if (!sess?.sub) {
+    throw fail('Unauthorized', 401);
+  }
+  
+  const user = await prisma.user.findUnique({ 
+    where: { id: sess.sub },
+    select: {
+      id: true,
+      privyId: true,
+      email: true,
+      walletAddress: true,
+      twoFaEnabled: true,
+      twoFaPinHash: true,
+      twoFaFailedAttempts: true,
+      twoFaLockedUntil: true,
+      twoFaVerifiedAt: true,
+    },
+  });
+  
+  if (!user) {
+    throw fail('Unauthorized', 401);
+  }
+  
+  return { user, sess };
+}
+
+/**
+ * Enforce 2FA verification if enabled
+ * @param {Object} sess - Session object from getSession()
+ * @param {Object} user - User object from database
+ * @throws {Response} - 403 response if 2FA required but not verified
+ */
+export function ensureTwoFa(sess, user) {
+  if (user.twoFaEnabled && !sess?.twoFaVerified) {
+    throw fail('Two-factor authentication required', 403, { reason: '2fa_required' });
+  }
+}
+
+/**
+ * Mark user as 2FA verified by upgrading the session
+ * @param {string} userId - User ID to mark as verified
+ */
+export function markTwoFaVerified(userId) {
+  setSession({ userId, twoFaVerified: true });
 }
 
