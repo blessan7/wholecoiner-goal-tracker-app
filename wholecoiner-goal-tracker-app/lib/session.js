@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me_in_production
  * @param {string} params.userId - User ID
  * @param {boolean} params.twoFaVerified - Whether 2FA is verified
  */
-export function setSession({ userId, twoFaVerified }) {
+export async function setSession({ userId, twoFaVerified }) {
   const token = jwt.sign(
     { 
       sub: userId, 
@@ -20,7 +20,7 @@ export function setSession({ userId, twoFaVerified }) {
     { expiresIn: '7d' }
   );
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
@@ -33,8 +33,8 @@ export function setSession({ userId, twoFaVerified }) {
 /**
  * Clear session cookie
  */
-export function clearSession() {
-  const cookieStore = cookies();
+export async function clearSession() {
+  const cookieStore = await cookies();
   cookieStore.set(COOKIE_NAME, '', {
     httpOnly: true,
     sameSite: 'lax',
@@ -48,8 +48,8 @@ export function clearSession() {
  * Get and verify session from cookie
  * @returns {Object|null} Session data or null if invalid
  */
-export function getSession() {
-  const cookieStore = cookies();
+export async function getSession() {
+  const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   
   if (!token) return null;

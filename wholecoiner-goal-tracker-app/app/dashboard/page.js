@@ -191,12 +191,26 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Placeholder for Goals */}
+        {/* Goals Section */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Your Goals</h2>
-          <p className="text-gray-600">
-            No goals yet. Goal creation will be implemented in Day 27+
-          </p>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Your Goals</h2>
+            <button
+              onClick={() => router.push('/goals/create')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + Create New Goal
+            </button>
+          </div>
+          
+          <div className="mt-4">
+            <button
+              onClick={() => router.push('/goals')}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              View All Goals →
+            </button>
+          </div>
         </div>
       </main>
     </div>

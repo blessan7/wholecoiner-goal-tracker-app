@@ -44,7 +44,7 @@ export async function POST(req) {
     });
 
     // Upgrade the session: twoFaVerified = true
-    markTwoFaVerified(user.id);
+    await markTwoFaVerified(user.id);
 
     return ok({ message: '2FA verified' });
   } catch (res) {

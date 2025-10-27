@@ -7,7 +7,6 @@ import { AuthenticationError, AuthorizationError } from './errors.js';
 import { logger } from './logger.js';
 import { prisma } from './prisma.js';
 import { getSession, setSession } from './session.js';
-import { fail } from './http.js';
 
 // Initialize Privy client
 const privyClient = new PrivyClient(
@@ -81,9 +80,9 @@ export async function verifySession(request) {
  * @throws {Response} - 401 response if authentication fails
  */
 export async function requireAuth() {
-  const sess = getSession();
+  const sess = await getSession();
   if (!sess?.sub) {
-    throw fail('Unauthorized', 401);
+    throw new AuthenticationError('Session not found');
   }
   
   const user = await prisma.user.findUnique({ 
@@ -102,7 +101,7 @@ export async function requireAuth() {
   });
   
   if (!user) {
-    throw fail('Unauthorized', 401);
+    throw new AuthenticationError('User not found');
   }
   
   return { user, sess };
@@ -116,7 +115,7 @@ export async function requireAuth() {
  */
 export function ensureTwoFa(sess, user) {
   if (user.twoFaEnabled && !sess?.twoFaVerified) {
-    throw fail('Two-factor authentication required', 403, { reason: '2fa_required' });
+    throw new AuthorizationError('Two-factor authentication required');
   }
 }
 
@@ -124,7 +123,7 @@ export function ensureTwoFa(sess, user) {
  * Mark user as 2FA verified by upgrading the session
  * @param {string} userId - User ID to mark as verified
  */
-export function markTwoFaVerified(userId) {
-  setSession({ userId, twoFaVerified: true });
+export async function markTwoFaVerified(userId) {
+  await setSession({ userId, twoFaVerified: true });
 }
 

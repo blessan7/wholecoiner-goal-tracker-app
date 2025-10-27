@@ -46,6 +46,42 @@ export class RateLimitError extends AppError {
   }
 }
 
+export class GoalValidationError extends AppError {
+  constructor(message, code) {
+    super(message, 422, code); // 422 Unprocessable Entity
+    this.name = 'GoalValidationError';
+  }
+}
+
+export const GoalErrors = {
+  INVALID_COIN: (coin) => new GoalValidationError(
+    `Invalid coin: ${coin}. Supported: BTC, ETH, SOL`, 
+    'INVALID_COIN'
+  ),
+  INVALID_AMOUNT: (field, min, max) => new GoalValidationError(
+    `${field} must be between ${min} and ${max}`, 
+    'INVALID_AMOUNT'
+  ),
+  INVALID_FREQUENCY: (freq) => new GoalValidationError(
+    `Invalid frequency: ${freq}. Must be DAILY, WEEKLY, or MONTHLY`, 
+    'INVALID_FREQUENCY'
+  ),
+  GOAL_DURATION_TOO_LONG: (months) => new GoalValidationError(
+    `Goal would take ${Math.ceil(months)} months (max 120 months / 10 years)`, 
+    'GOAL_DURATION_TOO_LONG'
+  ),
+  GOAL_NOT_FOUND: () => new NotFoundError('Goal not found'),
+  GOAL_NOT_OWNED: () => new AuthorizationError('You do not own this goal'),
+  INVALID_STATUS_TRANSITION: (from, to) => new GoalValidationError(
+    `Cannot transition from ${from} to ${to}`, 
+    'INVALID_STATUS_TRANSITION'
+  ),
+  GOAL_ALREADY_COMPLETED: () => new GoalValidationError(
+    'Cannot modify completed goal',
+    'GOAL_ALREADY_COMPLETED'
+  )
+};
+
 /**
  * Format error response
  */

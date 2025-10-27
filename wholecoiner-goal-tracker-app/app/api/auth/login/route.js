@@ -110,7 +110,7 @@ export async function POST(request) {
     });
 
     // Set session cookie (2FA not verified yet on login)
-    setSession({ userId: user.id, twoFaVerified: false });
+    await setSession({ userId: user.id, twoFaVerified: false });
 
     // Return user data (excluding sensitive fields)
     return Response.json(
