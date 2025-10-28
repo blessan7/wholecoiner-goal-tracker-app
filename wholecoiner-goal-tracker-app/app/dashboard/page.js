@@ -3,6 +3,7 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import PriceTicker from '@/components/PriceTicker';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -159,6 +160,9 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Live Prices Card */}
+        <PriceTicker coins={['BTC', 'ETH', 'SOL']} />
+
         {/* User Info Card */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Your Profile</h2>

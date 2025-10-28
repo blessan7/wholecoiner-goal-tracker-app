@@ -28,6 +28,67 @@ const TOKENS = {
   }
 };
 
+// Cache layer
+const priceCache = new Map(); // { cacheKey: { prices, fetchedAt } }
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Get multiple prices with caching
+ * @param {string[]} coinSymbols - Array of coin symbols (e.g., ['BTC', 'ETH'])
+ * @returns {Promise<{prices: Object, fetchedAt: string, stale: boolean}>}
+ */
+export async function getPricesInINR(coinSymbols) {
+  // Normalize and dedupe
+  const normalized = [...new Set(coinSymbols.map(c => c.toUpperCase()))];
+  
+  // Validate all coins
+  for (const coin of normalized) {
+    if (!isValidCoin(coin)) {
+      throw new Error(`Unknown token: ${coin}`);
+    }
+  }
+  
+  const cacheKey = normalized.sort().join(',');
+  const now = Date.now();
+  
+  // Check cache
+  const cached = priceCache.get(cacheKey);
+  if (cached && (now - cached.fetchedAt < CACHE_TTL_MS)) {
+    return {
+      prices: cached.prices,
+      fetchedAt: new Date(cached.fetchedAt).toISOString(),
+      stale: false
+    };
+  }
+  
+  // Fetch fresh prices
+  try {
+    const prices = {};
+    for (const coin of normalized) {
+      prices[coin] = await getPriceInINR(coin);
+    }
+    
+    const fetchedAt = now;
+    priceCache.set(cacheKey, { prices, fetchedAt });
+    
+    return {
+      prices,
+      fetchedAt: new Date(fetchedAt).toISOString(),
+      stale: false
+    };
+  } catch (error) {
+    // Fallback to stale cache if available
+    if (cached) {
+      return {
+        prices: cached.prices,
+        fetchedAt: new Date(cached.fetchedAt).toISOString(),
+        stale: true
+      };
+    }
+    throw error;
+  }
+}
+
 /**
  * Get price in INR (Jupiter-compatible interface)
  * Today: Mock USDC price × FX rate

@@ -113,6 +113,9 @@ export default function GoalsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -121,7 +124,11 @@ export default function GoalsPage() {
                   const progressPercentage = Number(goal.progressPercentage) || 0;
                   
                   return (
-                    <tr key={goal.id} className="hover:bg-gray-50">
+                    <tr 
+                      key={goal.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => router.push(`/goals/${goal.id}`)}
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{goal.coin}</div>
                       </td>
@@ -159,6 +166,17 @@ export default function GoalsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(goal.createdAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/goals/${goal.id}`);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          View Details →
+                        </button>
                       </td>
                     </tr>
                   );
