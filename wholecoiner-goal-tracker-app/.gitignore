@@ -33,6 +33,15 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Solana wallet files (never commit!)
+app-wallet.json
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!jsconfig.json
+prisma/app-wallet.json
+
 # vercel
 .vercel
 

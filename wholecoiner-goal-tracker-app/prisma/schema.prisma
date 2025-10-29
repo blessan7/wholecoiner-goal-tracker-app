@@ -67,6 +67,7 @@ model Transaction {
   
   goal            Goal             @relation(fields: [goalId], references: [id], onDelete: Cascade)
   
+  @@unique([batchId, type])
   @@index([goalId])
   @@index([batchId])
   @@index([type])

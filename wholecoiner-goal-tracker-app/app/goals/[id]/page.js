@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import OnrampSimulate from '@/components/OnrampSimulate';
+import SwapExecute from '@/components/SwapExecute';
+import TransactionHistory from '@/components/TransactionHistory';
 
 export default function GoalProgressPage({ params }) {
   const router = useRouter();
-  const goalId = params.id;
+  const { id: goalId } = use(params);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -235,8 +238,29 @@ export default function GoalProgressPage({ params }) {
           </div>
         </div>
 
+        {/* Investment Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Invest in This Goal</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <OnrampSimulate 
+              goalId={goalId} 
+              onSuccess={() => {
+                // Refresh progress after successful onramp
+                fetchProgress();
+              }} 
+            />
+            <SwapExecute 
+              goalId={goalId}
+              goalCoin={progress.coin}
+            />
+          </div>
+        </div>
+
+        {/* Transaction History */}
+        <TransactionHistory goalId={goalId} />
+
         {/* Actions */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-lg shadow p-6 mt-6">
           <h2 className="text-xl font-semibold mb-4">Actions</h2>
           <div className="flex flex-wrap gap-4">
             {progress.status === 'ACTIVE' ? (

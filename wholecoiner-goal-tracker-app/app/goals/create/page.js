@@ -51,17 +51,17 @@ export default function CreateGoalPage() {
             className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition-colors"
             aria-label="Back to Goals"
           >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h2 className="text-2xl font-bold text-gray-900 flex-1">Create New Goal</h2>
+          <h2 className="text-2xl font-bold text-black flex-1">Create New Goal</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Coin Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Cryptocurrency
             </label>
             <div className="flex gap-4">
@@ -82,7 +82,7 @@ export default function CreateGoalPage() {
 
           {/* Target Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Target Amount (coins)
             </label>
             <input
@@ -98,7 +98,7 @@ export default function CreateGoalPage() {
 
           {/* Frequency */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-black mb-2">
               Investment Frequency
             </label>
             <div className="flex gap-4">
@@ -119,19 +119,19 @@ export default function CreateGoalPage() {
 
           {/* Amount in INR */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amount per Interval (INR)
+            <label className="block text-sm font-medium text-black mb-2">
+              Amount per Interval (USDC)
             </label>
             <input
               type="number"
-              step="100"
-              min="100"
+              step="10"
+              min="10"
               value={formData.amountInr}
               onChange={(e) => setFormData({ ...formData, amountInr: parseFloat(e.target.value) })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
-            <p className="mt-1 text-sm text-gray-500">Minimum ₹100</p>
+            <p className="mt-1 text-sm text-gray-900">Minimum 10 USDC</p>
           </div>
 
           {/* Error Display */}

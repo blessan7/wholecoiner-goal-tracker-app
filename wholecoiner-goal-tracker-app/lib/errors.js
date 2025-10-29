@@ -82,6 +82,31 @@ export const GoalErrors = {
   )
 };
 
+// Swap-specific errors
+export class SwapError extends AppError {
+  constructor(message, code) {
+    super(message, 400, code);
+    this.name = 'SwapError';
+  }
+}
+
+export const SwapErrors = {
+  NO_ROUTE_FOUND: () => new SwapError('No swap route found for this token pair', 'NO_ROUTE_FOUND'),
+  SLIPPAGE_EXCEEDED: (slippagePct) => new SwapError(
+    `Slippage exceeded: ${slippagePct}%`, 
+    'SLIPPAGE_EXCEEDED'
+  ),
+  QUOTE_EXPIRED: () => new SwapError('Quote expired, please request a new quote', 'QUOTE_EXPIRED'),
+  SWAP_EXECUTION_FAILED: (reason) => new SwapError(
+    `Swap execution failed: ${reason}`, 
+    'SWAP_EXECUTION_FAILED'
+  ),
+  INSUFFICIENT_BALANCE: () => new SwapError('Insufficient balance for swap', 'INSUFFICIENT_BALANCE'),
+  INVALID_WALLET: () => new SwapError('Invalid wallet address', 'INVALID_WALLET'),
+  TRANSACTION_TIMEOUT: () => new SwapError('Transaction timeout, please try again', 'TRANSACTION_TIMEOUT'),
+  NETWORK_ERROR: () => new SwapError('Network error, please try again', 'NETWORK_ERROR'),
+};
+
 /**
  * Format error response
  */
