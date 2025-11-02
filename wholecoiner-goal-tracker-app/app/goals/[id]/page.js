@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import OnrampSimulate from '@/components/OnrampSimulate';
-import SwapExecute from '@/components/SwapExecute';
+import InvestFlow from '@/components/InvestFlow';
 import TransactionHistory from '@/components/TransactionHistory';
 
 export default function GoalProgressPage({ params }) {
@@ -12,6 +11,7 @@ export default function GoalProgressPage({ params }) {
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const transactionHistoryRef = useRef(null);
 
   useEffect(() => {
     fetchProgress();
@@ -63,7 +63,7 @@ export default function GoalProgressPage({ params }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading progress...</div>
+        <div className="text-black">Loading progress...</div>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function GoalProgressPage({ params }) {
   if (!progress) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">No progress data found</div>
+        <div className="text-black">No progress data found</div>
       </div>
     );
   }
@@ -104,12 +104,12 @@ export default function GoalProgressPage({ params }) {
             className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition-colors"
             aria-label="Back to Goals"
           >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-black">
               Goal: {progress.targetAmount} {progress.coin}
             </h1>
             <div className="flex items-center gap-2 mt-2">
@@ -120,7 +120,7 @@ export default function GoalProgressPage({ params }) {
               }`}>
                 {progress.status}
               </span>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-black">
                 Created {formatDate(progress.createdAt)}
               </span>
             </div>
@@ -129,25 +129,25 @@ export default function GoalProgressPage({ params }) {
 
         {/* Progress Overview */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Progress Overview</h2>
+          <h2 className="text-xl font-semibold mb-4 text-black">Progress Overview</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="text-center">
               <div className="text-4xl font-bold text-blue-600 mb-2">
                 {progress.progressPercentage.toFixed(1)}%
               </div>
-              <div className="text-sm text-gray-600">Complete</div>
+              <div className="text-sm text-black">Complete</div>
             </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-green-600 mb-2">
                 {progress.estimatedCompletion?.monthsToComplete || 'N/A'}
               </div>
-              <div className="text-sm text-gray-600">Months to Complete</div>
+              <div className="text-sm text-black">Months to Complete</div>
             </div>
           </div>
           
           {/* Progress Bar */}
           <div className="mt-6">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <div className="flex justify-between text-sm text-black mb-2">
               <span>{progress.investedAmount.toFixed(6)} {progress.coin}</span>
               <span>{progress.targetAmount} {progress.coin}</span>
             </div>
@@ -162,29 +162,29 @@ export default function GoalProgressPage({ params }) {
 
         {/* Financial Summary */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Financial Summary</h2>
+          <h2 className="text-xl font-semibold mb-4 text-black">Financial Summary</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Current Price:</span>
-                <span className="font-semibold">{formatCurrency(progress.currentPriceInr)}</span>
+                <span className="text-black">Current Price:</span>
+                <span className="font-semibold text-black">{formatCurrency(progress.currentPriceInr)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Target Value:</span>
-                <span className="font-semibold">{formatCurrency(progress.targetValueINR)}</span>
+                <span className="text-black">Target Value:</span>
+                <span className="font-semibold text-black">{formatCurrency(progress.targetValueINR)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Invested:</span>
-                <span className="font-semibold">{formatCurrency(progress.totalInvestedINR)}</span>
+                <span className="text-black">Invested:</span>
+                <span className="font-semibold text-black">{formatCurrency(progress.totalInvestedINR)}</span>
               </div>
             </div>
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Current Value:</span>
-                <span className="font-semibold">{formatCurrency(progress.currentValueINR)}</span>
+                <span className="text-black">Current Value:</span>
+                <span className="font-semibold text-black">{formatCurrency(progress.currentValueINR)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Profit/Loss:</span>
+                <span className="text-black">Profit/Loss:</span>
                 <span className={`font-semibold ${
                   progress.profitLossINR >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}>
@@ -192,8 +192,8 @@ export default function GoalProgressPage({ params }) {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Remaining:</span>
-                <span className="font-semibold">{progress.remainingAmount.toFixed(6)} {progress.coin}</span>
+                <span className="text-black">Remaining:</span>
+                <span className="font-semibold text-black">{progress.remainingAmount.toFixed(6)} {progress.coin}</span>
               </div>
             </div>
           </div>
@@ -201,38 +201,38 @@ export default function GoalProgressPage({ params }) {
 
         {/* Investment Plan */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Investment Plan</h2>
+          <h2 className="text-xl font-semibold mb-4 text-black">Investment Plan</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Frequency:</span>
-                <span className="font-semibold">{progress.frequency}</span>
+                <span className="text-black">Frequency:</span>
+                <span className="font-semibold text-black">{progress.frequency}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Amount per Interval:</span>
-                <span className="font-semibold">{formatCurrency(progress.amountInr)}</span>
+                <span className="text-black">Amount per Interval:</span>
+                <span className="font-semibold text-black">{formatCurrency(progress.amountInr)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Next Investment:</span>
-                <span className="font-semibold">{formatDate(progress.nextInvestmentDate)}</span>
+                <span className="text-black">Next Investment:</span>
+                <span className="font-semibold text-black">{formatDate(progress.nextInvestmentDate)}</span>
               </div>
             </div>
             <div className="space-y-4">
               {progress.estimatedCompletion && (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Estimated Completion:</span>
-                    <span className="font-semibold">{formatDate(progress.estimatedCompletion.estimatedCompletionDate)}</span>
+                    <span className="text-black">Estimated Completion:</span>
+                    <span className="font-semibold text-black">{formatDate(progress.estimatedCompletion.estimatedCompletionDate)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Intervals Needed:</span>
-                    <span className="font-semibold">{progress.estimatedCompletion.intervalsNeeded}</span>
+                    <span className="text-black">Intervals Needed:</span>
+                    <span className="font-semibold text-black">{progress.estimatedCompletion.intervalsNeeded}</span>
                   </div>
                 </>
               )}
               <div className="flex justify-between">
-                <span className="text-gray-600">Last Updated:</span>
-                <span className="font-semibold">{formatTime(progress.updatedAt)}</span>
+                <span className="text-black">Last Updated:</span>
+                <span className="font-semibold text-black">{formatTime(progress.updatedAt)}</span>
               </div>
             </div>
           </div>
@@ -240,28 +240,26 @@ export default function GoalProgressPage({ params }) {
 
         {/* Investment Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Invest in This Goal</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <OnrampSimulate 
-              goalId={goalId} 
-              onSuccess={() => {
-                // Refresh progress after successful onramp
-                fetchProgress();
-              }} 
-            />
-            <SwapExecute 
+          <h2 className="text-xl font-semibold mb-4 text-black">Invest in This Goal</h2>
+          <InvestFlow
               goalId={goalId}
               goalCoin={progress.coin}
+              onSuccess={() => {
+              // Refresh progress and transaction history after successful investment
+                fetchProgress();
+                if (transactionHistoryRef.current) {
+                  transactionHistoryRef.current.refresh();
+                }
+              }}
             />
-          </div>
         </div>
 
         {/* Transaction History */}
-        <TransactionHistory goalId={goalId} />
+        <TransactionHistory ref={transactionHistoryRef} goalId={goalId} />
 
         {/* Actions */}
         <div className="bg-white rounded-lg shadow p-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4">Actions</h2>
+          <h2 className="text-xl font-semibold mb-4 text-black">Actions</h2>
           <div className="flex flex-wrap gap-4">
             {progress.status === 'ACTIVE' ? (
               <button className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">

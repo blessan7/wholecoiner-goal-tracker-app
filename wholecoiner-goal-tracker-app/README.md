@@ -70,6 +70,35 @@ npx prisma migrate dev --name init
 npm run seed
 ```
 
+### App Wallet USDC Setup (Devnet Only)
+
+For USDC onramp simulation to work on devnet, you need to set up the app wallet with a USDC token account:
+
+1. Run the setup script:
+```bash
+node scripts/setup-app-wallet-usdc.js
+```
+
+This script will:
+- Check if the app wallet has a USDC Associated Token Account (ATA)
+- Create the ATA if it doesn't exist
+- Provide instructions for funding the wallet with devnet USDC
+
+2. Fund the app wallet using the USDC faucet:
+   - Visit: [https://usdcfaucet.com/](https://usdcfaucet.com/)
+   - Enter your app wallet address (displayed by the setup script)
+   - Request USDC tokens (e.g., 1000 USDC)
+   - Wait for confirmation
+
+3. Verify the setup:
+```bash
+node scripts/setup-app-wallet-usdc.js
+```
+
+The script will confirm that your wallet has been funded and is ready to transfer USDC.
+
+**Note:** This setup is only required for devnet. On mainnet, you'll need to fund the wallet with real USDC through exchanges or other means.
+
 ### Running Locally
 
 ```bash
@@ -133,6 +162,43 @@ npm run format
 # Check formatting
 npm run format:check
 ```
+
+### Testing Investment Flow
+
+The investment flow can be tested end-to-end using the test script:
+
+```bash
+npm run test:investment -- --goalId=<uuid> --cookie="<session-cookie>" [options]
+```
+
+**Example:**
+```bash
+npm run test:investment \
+  --goalId=cmhciqgiu0000n6orzg9e6756 \
+  --cookie="privy:session=xxxxx" \
+  --amount=10 \
+  --outputMint=BTC
+```
+
+**Options:**
+- `--goalId=<uuid>` - Goal ID to test with (required)
+- `--cookie=<string>` - Session cookie from browser (required)
+- `--amount=<number>` - USDC amount (default: 10)
+- `--baseUrl=<url>` - API base URL (default: http://localhost:3000)
+- `--outputMint=<coin>` - Output token BTC/ETH/SOL (default: BTC)
+
+**How to get session cookie:**
+1. Open your browser and log in to the app
+2. Open Developer Tools (F12)
+3. Go to Application/Storage > Cookies
+4. Copy the value of the session cookie (usually starts with "privy")
+5. Use: `--cookie="privy:xxxxx=yyyyy"`
+
+The test script will:
+- ✅ Test simulated USDC onramp
+- ✅ Test getting swap quote from Jupiter
+- ✅ Test checking investment status
+- 📊 Provide detailed logs and error messages at each step
 
 ## 📝 Development Workflow
 

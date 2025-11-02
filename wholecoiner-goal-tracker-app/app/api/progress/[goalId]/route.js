@@ -2,8 +2,9 @@ import { requireAuth, ensureTwoFa } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 import { calculateProgress, calculateEstimatedCompletion } from '@/lib/goalValidation';
-import { getPriceInINR } from '@/lib/prices';
+import { getPriceInINR, getPriceUSD } from '@/lib/prices';
 import { GoalErrors } from '@/lib/errors';
+import { getTokenMint } from '@/lib/tokens';
 
 /**
  * GET /api/progress/:goalId
@@ -11,10 +12,10 @@ import { GoalErrors } from '@/lib/errors';
  */
 export async function GET(request, { params }) {
   const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
-  const goalId = params.goalId;
+  const { goalId } = await params;
   
   try {
-    const { user, sess } = await requireAuth();
+    const { user, sess } = await requireAuth(request);
     ensureTwoFa(sess, user);
     
     logger.info('Fetching goal progress', { goalId, userId: user.id, requestId });
@@ -33,6 +34,18 @@ export async function GET(request, { params }) {
     
     // Get current price for this coin
     const currentPriceInr = await getPriceInINR(goal.coin);
+    
+    // Get current price in USD
+    let currentPriceUSD = null;
+    let currentValueUSDC = null;
+    try {
+      const tokenInfo = getTokenMint(goal.coin);
+      currentPriceUSD = await getPriceUSD(tokenInfo.mint);
+      currentValueUSDC = goal.investedAmount * currentPriceUSD;
+    } catch (error) {
+      logger.warn('Failed to fetch USD price', { error: error.message, goalId, requestId });
+      // Continue without USD values if price fetch fails
+    }
     
     // Calculate progress metrics
     const progressPercentage = calculateProgress(goal.investedAmount, goal.targetAmount);
@@ -110,9 +123,11 @@ export async function GET(request, { params }) {
       investedAmount: goal.investedAmount,
       progressPercentage,
       currentPriceInr,
+      currentPriceUSD: currentPriceUSD ? Math.round(currentPriceUSD * 100) / 100 : null,
       totalInvestedINR: Math.round(totalInvestedINR * 100) / 100,
       targetValueINR: Math.round(targetValueINR * 100) / 100,
       currentValueINR: Math.round(currentValueINR * 100) / 100,
+      currentValueUSDC: currentValueUSDC ? Math.round(currentValueUSDC * 100) / 100 : null,
       profitLossINR,
       profitLossPercentage,
       remainingAmount,

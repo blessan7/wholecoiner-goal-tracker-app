@@ -1,6 +1,7 @@
 'use client';
 
 import { PrivyProvider } from '@privy-io/react-auth';
+import { createSolanaRpc, createSolanaRpcSubscriptions } from '@solana/kit';
 import { useState, useEffect } from 'react';
 
 export default function PrivyProviderWrapper({ children }) {
@@ -10,29 +11,42 @@ export default function PrivyProviderWrapper({ children }) {
     setIsMounted(true);
   }, []);
 
-  // Only render Privy on client side to avoid SSR issues
+  // Avoid SSR issues
   if (!isMounted) {
     return <>{children}</>;
   }
+
+  // RPC URLs
+  const solanaRpcUrl =
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
+    'https://mainnet.helius-rpc.com/?api-key=c61b3693-90f8-46e7-b236-03871dbcdc1e';
+
+  const solanaWsUrl =
+    process.env.NEXT_PUBLIC_SOLANA_WS_URL ||
+    solanaRpcUrl.replace('https://', 'wss://').replace('http://', 'ws://');
 
   return (
     <PrivyProvider
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID}
       config={{
-        // Login methods
         loginMethods: ['email', 'google'],
-        
-        // Appearance customization
         appearance: {
           theme: 'light',
-          accentColor: '#F7931A', // Bitcoin orange from spec
-          logo: undefined, // Add your logo URL here later
+          accentColor: '#F7931A',
+          showWalletLoginFirst: false,
         },
-        
-        // Embedded wallets configuration
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
           requireUserPasswordOnCreate: false,
+        },
+        // ✅ New Solana configuration format for Privy v3
+        solana: {
+          rpcs: {
+            'solana:mainnet': {
+              rpc: createSolanaRpc(solanaRpcUrl),
+              rpcSubscriptions: createSolanaRpcSubscriptions(solanaWsUrl),
+            },
+          },
         },
       }}
     >

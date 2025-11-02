@@ -45,12 +45,47 @@ export async function clearSession() {
 }
 
 /**
+ * Parse cookie string to get value by name
+ * @param {string} cookieHeader - Cookie header string
+ * @param {string} name - Cookie name
+ * @returns {string|null} Cookie value or null
+ */
+function parseCookie(cookieHeader, name) {
+  if (!cookieHeader) return null;
+  
+  const cookies = cookieHeader.split(';').map(c => c.trim());
+  for (const cookie of cookies) {
+    const [cookieName, ...valueParts] = cookie.split('=');
+    if (cookieName.trim() === name) {
+      return valueParts.join('='); // Handle values with = signs
+    }
+  }
+  return null;
+}
+
+/**
  * Get and verify session from cookie
+ * @param {Request} request - Optional Request object to read cookies from headers
  * @returns {Object|null} Session data or null if invalid
  */
-export async function getSession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+export async function getSession(request = null) {
+  let token = null;
+  
+  // Try to get cookie from request headers first (for external requests)
+  if (request) {
+    const cookieHeader = request.headers.get('cookie');
+    token = parseCookie(cookieHeader, COOKIE_NAME);
+  }
+  
+  // Fallback to Next.js cookies() API (for internal requests)
+  if (!token) {
+    try {
+      const cookieStore = await cookies();
+      token = cookieStore.get(COOKIE_NAME)?.value;
+    } catch (error) {
+      // cookies() might fail in some contexts, that's okay
+    }
+  }
   
   if (!token) return null;
   

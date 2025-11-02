@@ -76,11 +76,12 @@ export async function verifySession(request) {
 
 /**
  * Require authentication - verify Privy token and get session
+ * @param {Request} request - Optional Request object for cookie reading
  * @returns {Promise<{user: Object, sess: Object}>}
  * @throws {Response} - 401 response if authentication fails
  */
-export async function requireAuth() {
-  const sess = await getSession();
+export async function requireAuth(request = null) {
+  const sess = await getSession(request);
   if (!sess?.sub) {
     throw new AuthenticationError('Session not found');
   }

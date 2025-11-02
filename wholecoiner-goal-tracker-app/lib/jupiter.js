@@ -3,10 +3,11 @@
  */
 
 import { logger } from './logger.js';
-import { AppError } from './errors.js';
+import { AppError, mapJupiterError } from './errors.js';
 
-const JUPITER_API_BASE = process.env.JUPITER_API_URL || 'https://public.jupiterapi.com';
-const JUPITER_QUOTE_API = `${JUPITER_API_BASE}/quote/v1`;
+// Using Jupiter Lite API (same as sher-web's working implementation)
+const JUPITER_API_BASE = process.env.JUPITER_API_URL || 'https://lite-api.jup.ag';
+const JUPITER_QUOTE_API = `${JUPITER_API_BASE}/swap/v1`;
 const JUPITER_SWAP_API = `${JUPITER_API_BASE}/swap/v1`;
 const DEFAULT_SLIPPAGE_BPS = 50; // 0.5%
 
@@ -20,15 +21,20 @@ const DEFAULT_SLIPPAGE_BPS = 50; // 0.5%
  */
 export async function getSwapQuote(inputMint, outputMint, amount, slippageBps = DEFAULT_SLIPPAGE_BPS) {
   try {
+    // Use same endpoint format as sher-web: /swap/v1/quote
     const url = new URL(`${JUPITER_QUOTE_API}/quote`);
     url.searchParams.set('inputMint', inputMint);
     url.searchParams.set('outputMint', outputMint);
     url.searchParams.set('amount', amount.toString());
     url.searchParams.set('slippageBps', slippageBps.toString());
-    url.searchParams.set('onlyDirectRoutes', 'false');
-    url.searchParams.set('asLegacyTransaction', 'false');
 
-    logger.info('Fetching Jupiter quote', { inputMint, outputMint, amount, slippageBps });
+    logger.info('Fetching Jupiter quote', { 
+      inputMint, 
+      outputMint, 
+      amount, 
+      slippageBps,
+      url: url.toString()
+    });
 
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -37,41 +43,131 @@ export async function getSwapQuote(inputMint, outputMint, amount, slippageBps = 
       },
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    // Parse JSON response even if status is 200 to check for Jupiter-specific errors
+    let quote;
+    const responseText = await response.text();
+    
+    try {
+      quote = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error('Failed to parse Jupiter response', { 
+        status: response.status,
+        responseText: responseText.substring(0, 500),
+        url: url.toString()
+      });
+      throw new AppError('Invalid JSON response from Jupiter API', 500, 'INVALID_RESPONSE');
+    }
+
+    // Check for Jupiter-specific error codes in response (even on 200 OK)
+    if (quote.error || quote.errorCode) {
+      const errorCode = quote.errorCode || 'UNKNOWN_ERROR';
+      const errorMessage = quote.error || quote.message || 'Unknown Jupiter API error';
+      
       logger.error('Jupiter quote API error', { 
         status: response.status, 
+        errorCode,
+        errorMessage,
+        inputMint,
+        outputMint,
+        error: quote,
+        url: url.toString()
+      });
+      
+      // Map Jupiter error codes to our error codes
+      if (errorCode === 'COULD_NOT_FIND_ANY_ROUTE') {
+        throw new AppError(
+          `No swap route found for token pair: ${inputMint} → ${outputMint}`,
+          404,
+          'NO_ROUTE_FOUND'
+        );
+      }
+      
+      if (errorCode === 'TOKEN_NOT_TRADABLE') {
+        throw new AppError(
+          `Token not tradable: ${outputMint}`,
+          400,
+          'TOKEN_NOT_TRADABLE'
+        );
+      }
+      
+      if (errorCode === 'ROUTE_PLAN_DOES_NOT_CONSUME_ALL_THE_AMOUNT') {
+        throw new AppError(
+          `Amount too large for available liquidity. Try reducing the swap amount.`,
+          400,
+          'AMOUNT_TOO_LARGE'
+        );
+      }
+      
+      // Generic Jupiter error
+      throw new AppError(
+        `Jupiter API error: ${errorMessage} (${errorCode})`,
+        response.status || 400,
+        'JUPITER_API_ERROR'
+      );
+    }
+
+    // Handle HTTP errors
+    if (!response.ok) {
+      logger.error('Jupiter quote API HTTP error', { 
+        status: response.status, 
         statusText: response.statusText,
-        error: errorText 
+        inputMint,
+        outputMint,
+        error: quote,
+        url: url.toString()
       });
       
       if (response.status === 404) {
-        throw new AppError('No swap route found for this token pair', 404, 'NO_ROUTE_FOUND');
+        throw new AppError(
+          `No swap route found for token pair: ${inputMint} → ${outputMint}`,
+          404,
+          'NO_ROUTE_FOUND'
+        );
       }
       
-      throw new AppError(`Jupiter API error: ${response.statusText}`, response.status, 'JUPITER_API_ERROR');
+      throw new AppError(
+        `Jupiter API error (${response.status}): ${response.statusText}. Input: ${inputMint}, Output: ${outputMint}`,
+        response.status,
+        'JUPITER_API_ERROR'
+      );
     }
-
-    const quote = await response.json();
     
     if (!quote || !quote.outAmount) {
       throw new AppError('Invalid quote response from Jupiter', 500, 'INVALID_QUOTE');
     }
 
+    // Extract expiresAt and quoteId from quote response
+    // Jupiter quotes typically expire in ~60 seconds, but we'll use contextMaxSlot to calculate expiry
+    // For now, we'll calculate expiresAt as current time + 60 seconds (conservative estimate)
+    const now = Date.now();
+    const expiresAt = quote.contextSlot ? 
+      new Date(now + 60000).toISOString() : // 60 seconds default if no context
+      new Date(now + 60000).toISOString();
+    
+    // Extract quoteId if available (some Jupiter responses include this)
+    const quoteId = quote.contextSlot?.toString() || quote.quoteId || null;
+
     logger.info('Jupiter quote received', { 
       inAmount: quote.inAmount, 
       outAmount: quote.outAmount,
-      priceImpactPct: quote.priceImpactPct 
+      priceImpactPct: quote.priceImpactPct,
+      expiresAt,
+      quoteId
     });
 
-    return quote;
+    // Add expiresAt and quoteId to quote response
+    return {
+      ...quote,
+      expiresAt,
+      quoteId,
+    };
   } catch (error) {
     if (error instanceof AppError) {
       throw error;
     }
     
     logger.error('Failed to get Jupiter quote', { error: error.message });
-    throw new AppError(`Failed to get swap quote: ${error.message}`, 500, 'QUOTE_FETCH_FAILED');
+    throw mapJupiterError(error);
   }
 }
 
@@ -84,15 +180,22 @@ export async function getSwapQuote(inputMint, outputMint, amount, slippageBps = 
  */
 export async function getSwapTransaction(quoteResponse, userPublicKey, slippageBps = DEFAULT_SLIPPAGE_BPS) {
   try {
-    const url = `${JUPITER_SWAP_API}`;
+    // Use same endpoint format as sher-web: /swap/v1/swap
+    const url = `${JUPITER_SWAP_API}/swap`;
     
+    // Match sher-web's swap request format
+    // Note: slippageBps is already included in quoteResponse, no need to include separately
     const swapRequest = {
       quoteResponse,
       userPublicKey,
-      slippageBps,
-      wrapAndUnwrapSol: true,
-      dynamicComputeUnitLimit: true,
-      prioritizationFeeLamports: 'auto',
+      // wrapAndUnwrapSol defaults to true in Jupiter API, can be omitted
+      // Prioritization fee format matches sher-web's pattern
+      prioritizationFeeLamports: {
+        priorityLevelWithMaxLamports: {
+          maxLamports: 10000,
+          priorityLevel: 'medium',
+        },
+      },
     };
 
     logger.info('Fetching Jupiter swap transaction', { userPublicKey, slippageBps });
@@ -138,7 +241,7 @@ export async function getSwapTransaction(quoteResponse, userPublicKey, slippageB
     }
     
     logger.error('Failed to get Jupiter swap transaction', { error: error.message });
-    throw new AppError(`Failed to get swap transaction: ${error.message}`, 500, 'SWAP_TRANSACTION_FETCH_FAILED');
+    throw mapJupiterError(error);
   }
 }
 
@@ -177,7 +280,7 @@ export async function submitSwapTransaction(signedTransaction, connection) {
     }
     
     logger.error('Failed to submit swap transaction', { error: error.message });
-    throw new AppError(`Failed to submit swap transaction: ${error.message}`, 500, 'SWAP_SUBMIT_FAILED');
+    throw mapJupiterError(error);
   }
 }
 

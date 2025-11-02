@@ -18,7 +18,7 @@ export async function POST(request) {
   let user = null;
   
   try {
-    const { user: authUser, sess } = await requireAuth();
+    const { user: authUser, sess } = await requireAuth(request);
     user = authUser;
     ensureTwoFa(sess, user);
     
@@ -113,7 +113,7 @@ export async function GET(request) {
   let user = null;
   
   try {
-    const { user: authUser, sess } = await requireAuth();
+    const { user: authUser, sess } = await requireAuth(request);
     user = authUser;
     ensureTwoFa(sess, user);
     

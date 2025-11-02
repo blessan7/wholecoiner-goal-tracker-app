@@ -10,7 +10,7 @@ export async function GET(request) {
   const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
   
   try {
-    const { user, sess } = await requireAuth();
+    const { user, sess } = await requireAuth(request);
     ensureTwoFa(sess, user);
     
     const { searchParams } = new URL(request.url);
@@ -33,7 +33,7 @@ export async function GET(request) {
         success: false,
         error: {
           code: 'INVALID_COIN',
-          message: `Unknown token: ${coin}. Supported: BTC, ETH, SOL`
+          message: `Unknown token: ${coin}. Supported tokens: BTC, ETH, SOL, USDC, USDT, JUP, RAY, BONK, WIF, PYTH`
         }
       }, { status: 422 });
     }

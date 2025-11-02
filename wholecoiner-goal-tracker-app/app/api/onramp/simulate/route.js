@@ -1,6 +1,6 @@
 /**
  * POST /api/onramp/simulate
- * Simulate onramp by transferring devnet SOL from app wallet to user wallet
+ * Simulate onramp by transferring mainnet SOL from app wallet to user wallet
  */
 
 import { requireAuth, ensureTwoFa } from '@/lib/auth';
@@ -21,7 +21,7 @@ import { TOKEN_MINTS } from '@/lib/tokens';
 import { SystemProgram, Transaction, PublicKey } from '@solana/web3.js';
 
 const MIN_AMOUNT_USDC = 10;
-const SOL_PRICE_USDC = 100; // Mock price for devnet: 1 SOL = 100 USDC
+const SOL_PRICE_USDC = 100; // Mock price conversion: 1 SOL = 100 USDC
 const MAX_CONFIRMATION_WAIT_MS = 30000; // 30 seconds
 
 export async function POST(request) {
@@ -29,7 +29,7 @@ export async function POST(request) {
   let user = null;
   
   try {
-    const { user: authUser, sess } = await requireAuth();
+    const { user: authUser, sess } = await requireAuth(request);
     user = authUser;
     ensureTwoFa(sess, user);
     
@@ -86,7 +86,7 @@ export async function POST(request) {
           network: existing.network,
         },
         explorerUrl: existing.txnHash 
-          ? `https://explorer.solana.com/tx/${existing.txnHash}?cluster=devnet`
+          ? `https://explorer.solana.com/tx/${existing.txnHash}?cluster=mainnet-beta`
           : null,
       }, { status: 200 });
     }
@@ -193,7 +193,7 @@ export async function POST(request) {
           batchId: finalBatchId,
           type: 'ONRAMP',
           provider: 'ONMETA',
-          network: 'DEVNET',
+          network: 'MAINNET',
           txnHash: signature,
           amountInr: amountUsdc, // Store as amountInr in DB for backward compatibility
           amountCrypto: solAmount,
@@ -227,7 +227,7 @@ export async function POST(request) {
         amountCrypto: dbTransaction.amountCrypto,
         network: dbTransaction.network,
       },
-      explorerUrl: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+      explorerUrl: `https://explorer.solana.com/tx/${signature}?cluster=mainnet-beta`,
     }, { status: 201 });
     
   } catch (error) {

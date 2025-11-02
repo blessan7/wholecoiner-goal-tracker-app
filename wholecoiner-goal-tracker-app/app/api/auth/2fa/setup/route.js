@@ -9,7 +9,7 @@ import { hashPin, validatePin } from '@/lib/2fa';
  */
 export async function POST(req) {
   try {
-    const { user } = await requireAuth();
+    const { user } = await requireAuth(req);
 
     const { pin } = await req.json();
     

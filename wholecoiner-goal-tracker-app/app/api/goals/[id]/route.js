@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
   let user = null;
   
   try {
-    const { user: authUser, sess } = await requireAuth();
+    const { user: authUser, sess } = await requireAuth(request);
     user = authUser;
     ensureTwoFa(sess, user);
     
@@ -129,7 +129,7 @@ export async function PATCH(request, { params }) {
   let user = null;
   
   try {
-    const { user: authUser, sess } = await requireAuth();
+    const { user: authUser, sess } = await requireAuth(request);
     user = authUser;
     ensureTwoFa(sess, user);
     

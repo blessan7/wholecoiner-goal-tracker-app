@@ -12,7 +12,7 @@ export async function GET(request) {
   
   try {
     // Require authentication and 2FA
-    const { user, sess } = await requireAuth();
+    const { user, sess } = await requireAuth(request);
     ensureTwoFa(sess, user);
 
     logger.debug('Fetching user profile', { userId: user.id, requestId });
@@ -102,7 +102,7 @@ export async function PATCH(request) {
 
   try {
     // Require authentication and 2FA
-    const { user, sess } = await requireAuth();
+    const { user, sess } = await requireAuth(request);
     ensureTwoFa(sess, user);
 
     const body = await request.json();

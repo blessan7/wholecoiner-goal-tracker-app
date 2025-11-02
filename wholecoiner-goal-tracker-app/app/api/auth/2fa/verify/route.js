@@ -9,7 +9,7 @@ import { verifyPin, validatePin, isLocked, recordFailedAttempt } from '@/lib/2fa
  */
 export async function POST(req) {
   try {
-    const { user } = await requireAuth();
+    const { user } = await requireAuth(req);
 
     if (!user.twoFaEnabled || !user.twoFaPinHash) {
       return fail('2FA not set up', 400);

@@ -2,25 +2,30 @@
 
 import { useState } from 'react';
 import { getTxExplorerUrl } from '@/lib/solana-explorer';
+import { useSolanaWallet, signSolanaTransaction } from '@/lib/solana-wallet';
 
-export default function SwapExecute({ goalId, goalCoin }) {
+export default function SwapExecute({ goalId, goalCoin, onSuccess }) {
+  const solanaWallet = useSolanaWallet();
+  
   const [inputToken, setInputToken] = useState('SOL');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState('');
+  const [txStatus, setTxStatus] = useState('idle'); // idle, signing, submitting, success, error
+  const [batchId, setBatchId] = useState(null);
   
-  // For devnet, swap is disabled
-  const isDevnet = true;
+  // Switched to mainnet - Jupiter swaps enabled
+  const isDevnet = false;
 
   const handleGetQuote = async () => {
     setLoading(true);
     setError('');
     setQuote(null);
+    const newBatchId = crypto.randomUUID();
+    setBatchId(newBatchId);
 
     try {
-      const batchId = crypto.randomUUID();
-
       const response = await fetch('/api/swap/execute', {
         method: 'POST',
         headers: {
@@ -31,14 +36,15 @@ export default function SwapExecute({ goalId, goalCoin }) {
           inputMint: inputToken,
           outputMint: goalCoin,
           amount: parseFloat(amount),
-          batchId,
+          batchId: newBatchId,
         }),
       });
 
       const data = await response.json();
 
       if (data.success && data.quote) {
-        setQuote(data.quote);
+        // Store the full response including swapTransaction
+        setQuote(data);
       } else {
         setError(data.error?.message || 'Failed to get swap quote');
       }
@@ -46,6 +52,57 @@ export default function SwapExecute({ goalId, goalCoin }) {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExecuteSwap = async () => {
+    if (!quote || !solanaWallet || !quote.swapTransaction) {
+      setError('Please get a quote first and ensure wallet is connected');
+      return;
+    }
+
+    try {
+      setTxStatus('signing');
+      setError('');
+
+      // Sign transaction with Privy wallet
+      const signedTransaction = await signSolanaTransaction(
+        solanaWallet,
+        quote.swapTransaction
+      );
+
+      setTxStatus('submitting');
+
+      // Submit signed transaction
+      const submitResponse = await fetch('/api/swap/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          goalId,
+          batchId,
+          signedTransaction,
+          quoteResponse: quote.quote,
+        }),
+      });
+
+      const submitData = await submitResponse.json();
+
+      if (submitData.success) {
+        setTxStatus('success');
+        setQuote(null);
+        setAmount('');
+        if (onSuccess) onSuccess();
+      } else {
+        throw new Error(submitData.error?.message || 'Swap failed');
+      }
+
+    } catch (err) {
+      setTxStatus('error');
+      setError(err.message || 'Failed to execute swap');
+    } finally {
+      setTimeout(() => setTxStatus('idle'), 3000);
     }
   };
 
@@ -120,9 +177,13 @@ export default function SwapExecute({ goalId, goalCoin }) {
 
         <button
           onClick={handleGetQuote}
-          disabled={isDevnet || loading || !amount}
-          className="w-full bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed"
-          title={isDevnet ? 'Jupiter swap is disabled on devnet' : 'Execute swap'}
+          disabled={loading || !amount}
+          className={`w-full px-4 py-2 rounded-lg text-white transition-colors ${
+            isDevnet || loading || !amount
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
+          title={isDevnet ? 'Jupiter swap is disabled on devnet' : 'Get swap quote'}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -132,29 +193,52 @@ export default function SwapExecute({ goalId, goalCoin }) {
               </svg>
               Getting quote...
             </span>
-          ) : (
+          ) : isDevnet ? (
             'Swap (Disabled on Devnet)'
+          ) : (
+            'Get Swap Quote'
           )}
         </button>
       </div>
 
       {quote && !isDevnet && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
           <p className="text-sm font-medium text-blue-900 mb-2">Quote Details</p>
           <div className="space-y-1 text-sm text-blue-800">
             <div className="flex justify-between">
               <span>In:</span>
-              <span className="font-mono">{quote.inAmount} {inputToken}</span>
+              <span className="font-mono">{quote.quote.inAmount} {inputToken}</span>
             </div>
             <div className="flex justify-between">
               <span>Out:</span>
-              <span className="font-mono">{quote.outAmount} {goalCoin}</span>
+              <span className="font-mono">{quote.quote.outAmount} {goalCoin}</span>
             </div>
             <div className="flex justify-between">
               <span>Price per unit:</span>
-              <span className="font-mono">{quote.pricePerUnit.toFixed(6)}</span>
+              <span className="font-mono">{quote.quote.pricePerUnit.toFixed(6)}</span>
             </div>
           </div>
+          
+          {/* Execute Swap Button */}
+          {solanaWallet ? (
+            <button
+              onClick={handleExecuteSwap}
+              disabled={txStatus === 'signing' || txStatus === 'submitting'}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              {txStatus === 'signing' && 'Signing Transaction...'}
+              {txStatus === 'submitting' && 'Submitting Transaction...'}
+              {txStatus === 'idle' && 'Execute Swap'}
+              {txStatus === 'success' && '✓ Swap Successful!'}
+              {txStatus === 'error' && '✗ Try Again'}
+            </button>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800 text-center">
+                ⚠️ Please connect your Solana wallet to execute swap
+              </p>
+            </div>
+          )}
         </div>
       )}
 

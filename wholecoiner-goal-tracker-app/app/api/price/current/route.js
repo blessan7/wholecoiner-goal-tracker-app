@@ -1,32 +1,37 @@
 import { requireAuth, ensureTwoFa } from '@/lib/auth';
-import { getPricesInINR } from '@/lib/prices';
+import { getPricesInINR, getPricesInUSD } from '@/lib/prices';
+import { getPopularTokenSymbols } from '@/lib/popular-tokens';
 import { logger } from '@/lib/logger';
 
 /**
- * GET /api/price/current?coins=BTC,ETH,SOL
- * Returns current prices in INR with caching
+ * GET /api/price/current?coins=BTC,ETH,SOL&currency=USD
+ * GET /api/price/current?currency=USD (returns all popular tokens in USD)
+ * Returns current prices in USD or INR with caching
  */
 export async function GET(request) {
   const requestId = request.headers.get('x-request-id') || crypto.randomUUID();
   
   try {
-    const { user, sess } = await requireAuth();
+    const { user, sess } = await requireAuth(request);
     ensureTwoFa(sess, user);
     
     const { searchParams } = new URL(request.url);
     const coinsParam = searchParams.get('coins');
+    const currency = searchParams.get('currency') || 'USD'; // Default to USD
     
+    let coinSymbols;
+    
+    // If no coins specified, return top 10 popular tokens
     if (!coinsParam) {
-      return Response.json({
-        success: false,
-        error: {
-          code: 'MISSING_COINS',
-          message: 'Query parameter "coins" is required (e.g., ?coins=BTC,ETH,SOL)'
-        }
-      }, { status: 400 });
+      coinSymbols = getPopularTokenSymbols();
+      logger.info('No coins specified, returning all popular tokens', { 
+        count: coinSymbols.length,
+        currency,
+        requestId 
+      });
+    } else {
+      coinSymbols = coinsParam.split(',').map(c => c.trim()).filter(Boolean);
     }
-    
-    const coinSymbols = coinsParam.split(',').map(c => c.trim()).filter(Boolean);
     
     if (coinSymbols.length === 0) {
       return Response.json({
@@ -38,23 +43,54 @@ export async function GET(request) {
       }, { status: 400 });
     }
     
-    logger.info('Fetching current prices', { coins: coinSymbols, userId: user.id, requestId });
+    // Limit to 20 tokens per request
+    if (coinSymbols.length > 20) {
+      coinSymbols = coinSymbols.slice(0, 20);
+      logger.warn('Too many coins requested, limiting to 20', { requestId });
+    }
     
-    const { prices, fetchedAt, stale } = await getPricesInINR(coinSymbols);
+    logger.info('Fetching current prices', { 
+      coins: coinSymbols, 
+      count: coinSymbols.length,
+      currency,
+      userId: user.id, 
+      requestId 
+    });
     
-    logger.info('Prices fetched', { coins: coinSymbols, stale, requestId });
+    // Fetch prices based on currency
+    let priceData;
+    if (currency.toUpperCase() === 'USD') {
+      priceData = await getPricesInUSD(coinSymbols);
+    } else {
+      priceData = await getPricesInINR(coinSymbols);
+    }
+    
+    logger.info('Prices fetched', { 
+      coins: coinSymbols, 
+      count: Object.keys(priceData.prices).length,
+      stale: priceData.stale,
+      source: priceData.source || 'jupiter',
+      requestId 
+    });
     
     return Response.json({
       success: true,
-      prices,
-      fetchedAt,
-      stale
+      prices: priceData.prices,
+      fetchedAt: priceData.fetchedAt,
+      stale: priceData.stale || false,
+      source: priceData.source || 'jupiter',
+      currency: currency.toUpperCase(),
+      count: Object.keys(priceData.prices).length
     }, { status: 200 });
     
   } catch (error) {
-    logger.error('Price fetch failed', { error: error.message, requestId });
+    logger.error('Price fetch failed', { 
+      error: error.message,
+      errorName: error.name,
+      requestId 
+    });
     
-    if (error.message.includes('Unknown token')) {
+    if (error.message.includes('Unsupported token') || error.message.includes('not found')) {
       return Response.json({
         success: false,
         error: {
@@ -67,8 +103,8 @@ export async function GET(request) {
     return Response.json({
       success: false,
       error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to fetch prices'
+        code: 'PRICE_FETCH_ERROR',
+        message: error.message || 'Failed to fetch prices'
       }
     }, { status: 500 });
   }

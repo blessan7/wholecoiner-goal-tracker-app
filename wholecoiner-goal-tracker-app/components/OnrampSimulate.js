@@ -63,7 +63,7 @@ export default function OnrampSimulate({ goalId, onSuccess }) {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-black">Simulate Onramp</h3>
       <p className="text-sm text-gray-900">
-        Convert USDC to devnet SOL (simulated transfer to your wallet)
+        Convert USDC to SOL (simulated transfer to your wallet on mainnet)
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -132,7 +132,7 @@ export default function OnrampSimulate({ goalId, onSuccess }) {
                     </button>
                   </div>
                   <a
-                    href={getTxExplorerUrl(txSignature, 'devnet')}
+                    href={getTxExplorerUrl(txSignature, 'mainnet-beta')}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-green-700 hover:text-green-900 underline"

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { getTxExplorerUrl } from '@/lib/solana-explorer';
 
-export default function TransactionHistory({ goalId }) {
+const TransactionHistory = forwardRef(function TransactionHistory({ goalId }, ref) {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -11,6 +11,11 @@ export default function TransactionHistory({ goalId }) {
   useEffect(() => {
     fetchTransactions();
   }, [goalId]);
+
+  // Expose refresh function to parent components
+  useImperativeHandle(ref, () => ({
+    refresh: fetchTransactions
+  }));
 
   const fetchTransactions = async () => {
     try {
@@ -126,22 +131,22 @@ export default function TransactionHistory({ goalId }) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                 Type
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                 Amount (USDC)
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                 Amount (Crypto)
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">
                 Transaction
               </th>
             </tr>
@@ -149,7 +154,7 @@ export default function TransactionHistory({ goalId }) {
           <tbody className="bg-white divide-y divide-gray-200">
             {transactions.map((tx) => (
               <tr key={tx.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-black">
                   {formatDate(tx.timestamp)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
@@ -157,11 +162,11 @@ export default function TransactionHistory({ goalId }) {
                     {tx.type}
                   </span>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-black">
                   {formatCurrency(tx.amountInr)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {formatAmount(tx.amountCrypto)} {tx.type === 'ONRAMP' ? 'SOL' : ''}
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-black">
+                  {formatAmount(tx.amountCrypto)} {tx.type === 'ONRAMP' ? 'USDC' : ''}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(tx.status || 'COMPLETED')}`}>
@@ -179,7 +184,7 @@ export default function TransactionHistory({ goalId }) {
                       {tx.txnHash.slice(0, 8)}...{tx.txnHash.slice(-8)}
                     </a>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-black">-</span>
                   )}
                 </td>
               </tr>
@@ -189,5 +194,6 @@ export default function TransactionHistory({ goalId }) {
       </div>
     </div>
   );
-}
+});
 
+export default TransactionHistory;

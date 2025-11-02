@@ -1,22 +1,29 @@
 /**
- * Solana connection and wallet helpers for devnet
+ * Solana connection and wallet helpers for mainnet
  */
 
 import { Connection, Keypair, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://devnet.helius-rpc.com/?api-key=a1c96ec7-818b-4789-ad2c-2bd175df4a95';
-const SOLANA_WS_URL = process.env.SOLANA_WS_URL || 'wss://devnet.helius-rpc.com/?api-key=a1c96ec7-818b-4789-ad2c-2bd175df4a95';
+const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=c61b3693-90f8-46e7-b236-03871dbcdc1e';
+const SOLANA_WS_URL = process.env.SOLANA_WS_URL || 'wss://mainnet.helius-rpc.com/?api-key=c61b3693-90f8-46e7-b236-03871dbcdc1e';
 
 let connection = null;
 let appWallet = null;
+let currentRpcUrl = null;
 
 /**
  * Get Solana connection (singleton)
+ * Resets connection if RPC URL changes
  */
 export function getSolanaConnection() {
-  if (!connection) {
-    connection = new Connection(SOLANA_RPC_URL, 'confirmed');
+  const rpcUrl = process.env.SOLANA_RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=c61b3693-90f8-46e7-b236-03871dbcdc1e';
+  
+  // Reset connection if RPC URL changed or connection doesn't exist
+  if (!connection || currentRpcUrl !== rpcUrl) {
+    connection = new Connection(rpcUrl, 'confirmed');
+    currentRpcUrl = rpcUrl;
   }
+  
   return connection;
 }
 
