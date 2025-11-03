@@ -22,7 +22,7 @@ export default function TwoFAVerifyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative flex h-auto min-h-screen w-full flex-col items-center justify-center p-4">
       <TwoFAVerify onSuccess={handleSuccess} onLocked={handleLocked} />
     </div>
   );

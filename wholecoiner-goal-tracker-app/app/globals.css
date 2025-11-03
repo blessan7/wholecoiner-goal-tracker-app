@@ -1,26 +1,56 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #ec9213;
+  --color-background-light: #f8f7f6;
+  --color-background-dark: #221a10;
+  --font-display: Inter, sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-inter: 'Inter', sans-serif;
+  --primary: #ec9213;
+  --background-light: #f8f7f6;
+  --background-dark: #221a10;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), sans-serif;
+  /* Default light background - matches help.txt */
+  background-color: #f8f7f6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark mode background - matches help.txt */
+html.dark body {
+  background-color: #221a10;
+}
+
+/* Smooth transitions for premium feel */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom color classes */
+.bg-primary {
+  background-color: var(--primary);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.bg-background-light {
+  background-color: var(--background-light);
+}
+
+.bg-background-dark {
+  background-color: var(--background-dark);
+}
+
+.text-background-dark {
+  color: var(--background-dark);
 }

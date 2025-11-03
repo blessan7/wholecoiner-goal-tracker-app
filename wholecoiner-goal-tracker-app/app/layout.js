@@ -1,28 +1,26 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import PrivyProviderWrapper from "@/lib/privy-provider";
+import MaterialSymbolsLoader from "@/components/MaterialSymbolsLoader";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
 });
 
 export const metadata = {
-  title: "Wholecoiner Goal Tracker",
-  description: "Systematically accumulate full cryptocurrency units through micro-investments",
+  title: "Wholecoiner - Clarity for your Crypto Portfolio",
+  description: "Systematically accumulate 1 full BTC, ETH, or SOL through disciplined micro-investments",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark`}
       >
+        <MaterialSymbolsLoader />
         <PrivyProviderWrapper>
           {children}
         </PrivyProviderWrapper>

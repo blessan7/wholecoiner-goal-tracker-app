@@ -3,12 +3,21 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import PriceTicker from '@/components/PriceTicker';
+import HeaderPriceTicker from '@/components/HeaderPriceTicker';
+import GoalCard from '@/components/GoalCard';
 
 export default function Dashboard() {
   const router = useRouter();
   const { ready, authenticated, user, logout } = usePrivy();
   const [checking2FA, setChecking2FA] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const [goals, setGoals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalBalance: 0,
+    overallProgress: 0,
+    activeGoals: 0,
+  });
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -17,7 +26,7 @@ export default function Dashboard() {
     }
   }, [ready, authenticated, router]);
 
-  // Check 2FA status
+  // Check 2FA status and fetch data
   useEffect(() => {
     if (ready && authenticated) {
       check2FAStatus();
@@ -26,53 +35,105 @@ export default function Dashboard() {
 
   const check2FAStatus = async () => {
     try {
-      // Try to access protected /api/user endpoint
       const response = await fetch('/api/user', {
-        credentials: 'include', // Include session cookie
+        credentials: 'include',
       });
 
       if (response.status === 403) {
-        // 2FA verification required
         const data = await response.json();
         if (data.error?.reason === '2fa_required') {
-          console.log('2FA verification required, redirecting...');
           router.push('/auth/2fa/verify');
           return;
         }
       } else if (response.status === 401) {
-        // Not authenticated - redirect to home
         router.push('/');
         return;
-      } else if (!response.ok) {
-        // Other error - log it but stay on dashboard
-        console.error('Failed to check 2FA status:', response.status);
+      } else if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUserData(data.user);
+          fetchGoals();
+        }
       }
-
-      // Success - user is fully authenticated and 2FA verified
+      
       setChecking2FA(false);
     } catch (error) {
       console.error('Error checking 2FA status:', error);
-      // Allow access anyway to avoid blocking legitimate users
       setChecking2FA(false);
     }
+  };
+
+  const fetchGoals = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/goals', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setGoals(data.goals || []);
+          calculateStats(data.goals || []);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching goals:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = (goalsData) => {
+    const activeGoals = goalsData.filter(g => g.status === 'ACTIVE');
+    const activeGoalsCount = activeGoals.length;
+
+    // Calculate overall progress (average of all active goals)
+    let overallProgress = 0;
+    if (activeGoals.length > 0) {
+      const totalProgress = activeGoals.reduce((sum, goal) => {
+        return sum + (goal.progressPercentage || 0);
+      }, 0);
+      overallProgress = Math.round(totalProgress / activeGoals.length);
+    }
+
+    // Calculate total balance (simplified - sum of invested amounts)
+    // In real implementation, convert to USD using current prices
+    const totalBalance = goalsData.reduce((sum, goal) => {
+      return sum + (parseFloat(goal.investedAmount) || 0);
+    }, 0);
+
+    setStats({
+      totalBalance,
+      overallProgress,
+      activeGoals: activeGoalsCount,
+    });
   };
 
   const handleLogout = async () => {
     try {
       await logout();
-      // Redirect to home page after logout
       router.push('/');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
+  const getUserName = () => {
+    if (userData?.email) {
+      // Extract first name from email or use email prefix
+      const emailPrefix = userData.email.split('@')[0];
+      return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+    }
+    return 'User';
+  };
+
   // Show loading while checking auth or 2FA
-  if (!ready || checking2FA) {
+  if (!ready || checking2FA || loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-gray-900">
+      <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background-light dark:bg-background-dark">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+        <p className="text-text-primary-light dark:text-text-primary-dark">
           {!ready ? 'Loading...' : 'Verifying authentication...'}
         </p>
       </div>
@@ -84,11 +145,7 @@ export default function Dashboard() {
     return null;
   }
 
-  // Debug: Log user object to see structure
-  console.log('Dashboard - Full user object:', user);
-  console.log('Dashboard - linkedAccounts:', user.linkedAccounts);
-
-  // Extract email from linkedAccounts
+  // Extract email for avatar
   let email = '';
   if (user.linkedAccounts && Array.isArray(user.linkedAccounts)) {
     const googleAccount = user.linkedAccounts.find(
@@ -99,125 +156,188 @@ export default function Dashboard() {
     }
   }
 
-  // Extract wallet address from linkedAccounts
-  let walletAddress = null;
-
-  // Method 1: Check linkedAccounts for embedded wallet
-  if (user.linkedAccounts && Array.isArray(user.linkedAccounts)) {
-    // Try to find wallet by various type names
-    const embeddedWallet = user.linkedAccounts.find(
-      account => 
-        account.type === 'wallet' || 
-        account.type === 'solana_wallet' ||
-        account.type === 'embedded_wallet' ||
-        (account.walletClient === 'privy') ||
-        (account.walletClientType === 'privy')
-    );
-    
-    if (embeddedWallet) {
-      console.log('Found embedded wallet:', embeddedWallet);
-      walletAddress = embeddedWallet.address;
+  // Get user avatar URL (from Google account if available)
+  const getAvatarUrl = () => {
+    if (user.linkedAccounts && Array.isArray(user.linkedAccounts)) {
+      const googleAccount = user.linkedAccounts.find(
+        account => account.type === 'google_oauth'
+      );
+      if (googleAccount?.picture) {
+        return googleAccount.picture;
+      }
     }
-  }
+    // Fallback to initials avatar
+    return null;
+  };
 
-  // Method 2: Check direct wallet property
-  if (!walletAddress && user.wallet?.address) {
-    console.log('Found wallet at user.wallet:', user.wallet);
-    walletAddress = user.wallet.address;
-  }
-
-  // Method 3: Check wallets array (some Privy versions use this)
-  if (!walletAddress && user.wallets && Array.isArray(user.wallets) && user.wallets.length > 0) {
-    console.log('Found wallets array:', user.wallets);
-    const solanaWallet = user.wallets.find(w => w.chainType === 'solana' || w.walletClientType === 'privy');
-    if (solanaWallet) {
-      walletAddress = solanaWallet.address;
-    } else {
-      // Just take the first wallet if no Solana-specific found
-      walletAddress = user.wallets[0].address;
-    }
-  }
-
-  console.log('Final wallet address:', walletAddress);
+  const avatarUrl = getAvatarUrl();
+  const userName = getUserName();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header with Logout */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-black">Dashboard</h1>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Live Prices Card */}
-        <PriceTicker coins={['BTC', 'ETH', 'SOL']} />
-
-        {/* User Info Card */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-black">Your Profile</h2>
-          <div className="space-y-3">
-            <div>
-              <span className="text-sm font-medium text-gray-900">Email:</span>
-              <p className="text-gray-900">{email || 'Not available'}</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-gray-900">Privy ID:</span>
-              <p className="text-gray-900 font-mono text-sm">{user.id}</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-gray-900">Solana Wallet:</span>
-              {walletAddress ? (
-                <p className="text-gray-900 font-mono text-sm break-all">
-                  {walletAddress}
-                </p>
-              ) : (
-                <div className="mt-1">
-                  <p className="text-amber-600 text-sm mb-2">
-                    ⚠️ Embedded wallet not created yet
-                  </p>
-                  <p className="text-xs text-gray-900">
-                    The wallet should be auto-created on login. Check your Privy dashboard settings.
-                  </p>
+    <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark">
+      <div className="layout-container flex h-full grow flex-col">
+        <div className="flex flex-1 justify-center px-4 py-5 sm:px-8 md:px-12 lg:px-20">
+          <div className="layout-content-container flex w-full max-w-6xl flex-1 flex-col">
+            {/* TopNavBar */}
+            <header className="flex flex-col items-center justify-between gap-4 border-b border-solid border-border-light dark:border-border-dark px-2 py-4 md:flex-row md:px-6 md:py-5">
+              <div className="flex w-full items-center justify-between md:w-auto md:justify-start md:gap-10">
+                <div className="flex items-center gap-3 text-text-primary-light dark:text-text-primary-dark">
+                  <div className="size-6 text-primary">
+                    <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        clipRule="evenodd"
+                        d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z"
+                        fill="currentColor"
+                        fillRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <h2 className="text-lg font-bold leading-tight tracking-tight">Wholecoiner</h2>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
+                <div className="hidden items-center gap-8 md:flex">
+                  <a
+                    className="text-sm font-medium text-text-primary-light dark:text-text-primary-dark"
+                    href="#"
+                  >
+                    Dashboard
+                  </a>
+                  <a
+                    className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:text-text-primary-light dark:hover:text-text-primary-dark transition-colors"
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      router.push('/goals');
+                    }}
+                  >
+                    Goals
+                  </a>
+                  <a
+                    className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark hover:text-text-primary-light dark:hover:text-text-primary-dark transition-colors"
+                    href="#"
+                  >
+                    Settings
+                  </a>
+                </div>
+              </div>
 
-        {/* Goals Section */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-black">Your Goals</h2>
-            <button
-              onClick={() => router.push('/goals/create')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              + Create New Goal
-            </button>
-          </div>
-          
-          <div className="mt-4">
-            <button
-              onClick={() => router.push('/goals')}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              View All Goals →
-            </button>
+              {/* Price Ticker (Centered) */}
+              <HeaderPriceTicker />
+
+              {/* Actions */}
+              <div className="flex items-center gap-4">
+                <button className="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent text-text-secondary-light hover:bg-primary/10 hover:text-text-primary-light transition-colors dark:text-text-secondary-dark dark:hover:bg-primary/20 dark:hover:text-text-primary-dark">
+                  <span className="material-symbols-outlined">notifications</span>
+                </button>
+                {avatarUrl ? (
+                  <div
+                    className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
+                    style={{ backgroundImage: `url("${avatarUrl}")` }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center rounded-full size-10 bg-primary/20 text-primary font-bold text-sm">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="flex flex-col gap-8 py-8 md:py-10">
+              {/* Hero Section */}
+              <section className="flex flex-col gap-6 rounded-lg bg-card-light dark:bg-card-dark p-6 shadow-soft dark:shadow-none md:p-8">
+                <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+                  <h1 className="text-2xl font-bold leading-tight tracking-tight text-text-primary-light dark:text-text-primary-dark sm:text-3xl">
+                    Welcome back, {userName}
+                  </h1>
+                  <button
+                    onClick={() => router.push('/goals/create')}
+                    className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white shadow-soft transition-transform hover:scale-105"
+                  >
+                    <span className="material-symbols-outlined text-base">add</span>
+                    Create a new goal
+                  </button>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="flex flex-col gap-2 rounded-lg p-6 bg-background-light dark:bg-background-dark">
+                    <p className="text-base font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                      Total Balance
+                    </p>
+                    <p className="text-3xl font-bold leading-tight tracking-tight text-text-primary-light dark:text-text-primary-dark">
+                      ${stats.totalBalance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 rounded-lg p-6 bg-background-light dark:bg-background-dark">
+                    <p className="text-base font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                      Overall Goal Progress
+                    </p>
+                    <p className="text-3xl font-bold leading-tight tracking-tight text-text-primary-light dark:text-text-primary-dark">
+                      {stats.overallProgress}%
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 rounded-lg p-6 bg-background-light dark:bg-background-dark">
+                    <p className="text-base font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                      Active Goals
+                    </p>
+                    <p className="text-3xl font-bold leading-tight tracking-tight text-text-primary-light dark:text-text-primary-dark">
+                      {stats.activeGoals}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Overall Progress Bar */}
+                <div className="flex flex-col gap-2 pt-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
+                      Overall Progress
+                    </p>
+                    <p className="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                      {stats.overallProgress}%
+                    </p>
+                  </div>
+                  <div className="h-2.5 w-full rounded-full bg-background-light dark:bg-background-dark">
+                    <div
+                      className="h-2.5 rounded-full bg-primary"
+                      style={{ width: `${stats.overallProgress}%` }}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Goals Overview */}
+              <section className="flex flex-col gap-6">
+                <h2 className="text-xl font-bold text-text-primary-light dark:text-text-primary-dark px-2">
+                  Your Goals
+                </h2>
+                {goals.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-border-light bg-card-light dark:border-border-dark dark:bg-card-dark p-12 text-center">
+                    <p className="text-lg font-medium text-text-secondary-light dark:text-text-secondary-dark">
+                      No goals yet
+                    </p>
+                    <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark mb-4">
+                      Start your journey by creating your first goal
+                    </p>
+                    <button
+                      onClick={() => router.push('/goals/create')}
+                      className="flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-white shadow-soft transition-transform hover:scale-105"
+                    >
+                      <span className="material-symbols-outlined text-base">add</span>
+                      Create your first goal
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {goals.map((goal) => (
+                      <GoalCard key={goal.id} goal={goal} />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </main>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
-
