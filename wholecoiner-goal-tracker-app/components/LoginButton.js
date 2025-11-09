@@ -9,8 +9,11 @@ export default function LoginButton({ variant = 'hero' }) {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [shouldSync, setShouldSync] = useState(false);
 
   const handleUserSync = useCallback(async () => {
+    if (!authenticated || !user) return;
+
     try {
       setIsLoading(true);
       setError(null);
@@ -121,43 +124,43 @@ export default function LoginButton({ variant = 'hero' }) {
       const data = await response.json();
       console.log('User synced successfully:', data);
 
-      // ✨ NEW: Redirect based on 2FA status
-      const { twoFaEnabled } = data.user;
-
-      if (!twoFaEnabled) {
-        // New user - needs to set up 2FA
-        console.log('Redirecting to 2FA setup (new user)');
-        router.push('/auth/2fa/setup');
-      } else {
-        // Returning user - needs to verify 2FA
-        console.log('Redirecting to 2FA verify (returning user)');
-        router.push('/auth/2fa/verify');
-      }
+      const targetRoute = data?.user?.twoFaEnabled ? '/auth/2fa/verify' : '/auth/2fa/setup';
+      console.log('Redirecting to', targetRoute);
+      await router.push(targetRoute);
     } catch (err) {
       console.error('Error syncing user:', err);
       setError(err.message);
-    } finally {
       setIsLoading(false);
+      setShouldSync(false);
+    } finally {
+      // When router.push resolves we’re on the next screen; spinner will be cleared there.
     }
-  }, [user, getAccessToken, router]);
+  }, [authenticated, user, getAccessToken, router]);
 
   // Redirect to dashboard if authenticated
   useEffect(() => {
-    if (authenticated && user) {
-      // Call our backend to create/update user record
+    if (shouldSync && authenticated && user) {
       handleUserSync();
     }
-  }, [authenticated, user, handleUserSync]);
+  }, [shouldSync, authenticated, user, handleUserSync]);
+
+  useEffect(() => {
+    if (variant === 'hero' && authenticated && user && !shouldSync && !isLoading) {
+      setShouldSync(true);
+    }
+  }, [variant, authenticated, user, shouldSync, isLoading]);
 
   const handleLogin = async () => {
     try {
       setIsLoading(true);
       setError(null);
       await login();
+      setShouldSync(true);
     } catch (err) {
       console.error('Login error:', err);
       setError('Failed to login. Please try again.');
       setIsLoading(false);
+      setShouldSync(false);
     }
   };
 
@@ -169,6 +172,12 @@ export default function LoginButton({ variant = 'hero' }) {
       console.error('Logout error:', err);
       setError('Failed to logout. Please try again.');
     }
+  };
+
+  const handleContinue = () => {
+    setError(null);
+    setIsLoading(true);
+    setShouldSync(true);
   };
 
   // Show loading state while Privy initializes (minimal, calm)
@@ -202,31 +211,16 @@ export default function LoginButton({ variant = 'hero' }) {
     // Hero section authenticated state (for account setup)
     return (
       <div className="flex flex-col items-center gap-4">
-        {isLoading ? (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Setting up your account...</p>
-          </div>
-        ) : (
-          <>
-            <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Logged in as {user.email?.address || 'User'}
-              </p>
-              {user.wallet?.address && (
-                <p className="text-xs text-gray-500 dark:text-gray-500 font-mono">
-                  {user.wallet.address.slice(0, 6)}...{user.wallet.address.slice(-4)}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-6 py-3 bg-gray-600 dark:bg-gray-700 text-white rounded-full hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
-            >
-              Logout
-            </button>
-          </>
-        )}
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Setting up your account…</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
+        >
+          Log out
+        </button>
       </div>
     );
   }
@@ -247,16 +241,16 @@ export default function LoginButton({ variant = 'hero' }) {
 
   // Hero CTA button - large, prominent
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex w-full flex-col items-center gap-4 lg:items-stretch">
       {error && (
-        <div className="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-sm">
+        <div className="w-full rounded-full bg-red-900/30 px-4 py-2 text-sm text-red-200">
           {error}
         </div>
       )}
       <button
         onClick={handleLogin}
         disabled={isLoading}
-        className="flex h-12 min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary px-6 text-base font-bold text-background-dark shadow-md transition-all hover:shadow-lg hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+        className="flex h-12 w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary px-6 text-base font-bold text-[#221a10] shadow-md transition-all hover:-translate-y-1 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
       >
         {isLoading ? (
           <span className="truncate">Connecting...</span>

@@ -65,12 +65,6 @@ model Transaction {
   timestamp       DateTime         @default(now())
   meta            Json?
   
-  // Investment state tracking (stored in meta JSONB for flexibility):
-  // - state: PENDING_ONRAMP | ONRAMP_CONFIRMED | QUOTED | SWAP_SIGNED | SWAP_SUBMITTED | SWAP_CONFIRMED | EXPIRED | FAILED | CANCELED
-  // - expiresAt: ISO timestamp (for quote expiration)
-  // - quoteId: Jupiter quote ID for idempotency
-  // - status: transaction-level status string
-  
   goal            Goal             @relation(fields: [goalId], references: [id], onDelete: Cascade)
   
   @@unique([batchId, type])
@@ -87,7 +81,6 @@ model Notification {
   userId          String           @map("user_id")
   type            String
   message         String
-  meta            Json?
   status          NotificationStatus @default(UNREAD)
   timestamp       DateTime         @default(now())
   
@@ -138,7 +131,6 @@ enum TransactionType {
 enum Provider {
   ONMETA
   JUPITER
-  FAUCET
 }
 
 enum Network {
