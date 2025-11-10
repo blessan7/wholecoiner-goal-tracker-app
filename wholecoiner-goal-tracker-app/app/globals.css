@@ -59,6 +59,39 @@ button:focus-visible {
   outline-offset: 3px;
 }
 
+.keypad-button {
+  border: 1px solid var(--border-subtle);
+  background-color: transparent;
+  color: var(--text-secondary);
+  transition: transform 150ms ease, background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.keypad-button:hover {
+  background-color: #22160d;
+  color: var(--text-primary);
+}
+
+.keypad-button:active {
+  transform: scale(0.96);
+}
+
+.keypad-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 159, 28, 0.35);
+}
+
+.shake {
+  animation: shake 0.25s ease-in-out;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
 .btn-primary {
   background-color: var(--accent);
   color: #0d0804;
@@ -112,4 +145,13 @@ button:focus-visible {
   filter: blur(80px);
   opacity: 0.9;
   pointer-events: none;
+}
+
+.ticker-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ticker-scroll::-webkit-scrollbar {
+  display: none;
 }

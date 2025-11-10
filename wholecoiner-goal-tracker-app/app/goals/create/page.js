@@ -5,6 +5,37 @@ import { useRouter } from 'next/navigation';
 import { usePrivy } from '@privy-io/react-auth';
 import Link from 'next/link';
 
+const COIN_OPTIONS = [
+  {
+    value: 'BTC',
+    label: 'Bitcoin',
+    caption: 'Stack sats toward a full BTC.'
+  },
+  {
+    value: 'ETH',
+    label: 'Ethereum',
+    caption: 'Own 32 ETH to run your own validator.'
+  },
+  {
+    value: 'SOL',
+    label: 'Solana',
+    caption: 'Catch the next protocol run with SOL.'
+  }
+];
+
+const FREQUENCY_OPTIONS = [
+  { value: 'DAILY', label: 'Daily', helper: 'Micro-purchases every day' },
+  { value: 'WEEKLY', label: 'Weekly', helper: 'Automate your weekend buys' },
+  { value: 'MONTHLY', label: 'Monthly', helper: 'Align with payday momentum' }
+];
+
+const formatCurrency = (value) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: value >= 1000 ? 0 : 2
+  }).format(Number(value || 0));
+
 export default function CreateGoalPage() {
   const router = useRouter();
   const { ready, authenticated, user } = usePrivy();
@@ -185,317 +216,439 @@ export default function CreateGoalPage() {
     return `${months} ${months === 1 ? 'month' : 'months'}`;
   };
 
-  // Show loading while checking auth
+  const [savingDraft, setSavingDraft] = useState(false);
+
+  const handleSaveDraft = async () => {
+    setError('');
+    setSavingDraft(true);
+    try {
+      // Lightweight placeholder flow – future draft endpoint can plug in here.
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      router.push('/goals');
+    } catch (err) {
+      console.error('Draft save error:', err);
+      setError('Unable to save draft right now. Please try again.');
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
   if (!ready || !authenticated || !user) {
     return (
-      <div className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background-light dark:bg-background-dark">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-        <p className="text-text-primary-light dark:text-text-primary-dark">Loading...</p>
+      <div className="min-h-screen w-full bg-[var(--bg-main)] bg-gradient-to-b from-[var(--bg-main)] via-[#17110b] to-[#120904] flex flex-col items-center justify-center text-[var(--text-primary)]">
+        <div className="w-12 h-12 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-sm text-[var(--text-secondary)]">Loading your workspace…</p>
       </div>
     );
   }
 
   return (
-    <div className="relative flex h-auto min-h-screen w-full flex-col dark group/design-root overflow-x-hidden">
-      <div className="layout-container flex h-full grow flex-col">
-        {/* TopNavBar */}
-        <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-[#483923] px-4 sm:px-6 md:px-10 py-3">
-          <div className="flex items-center gap-4 text-white">
-            <Link href="/dashboard" className="flex items-center gap-3">
-              <div className="size-6 text-primary">
-                <svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path clipRule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fillRule="evenodd"></path>
-                </svg>
-              </div>
-              <h2 className="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Wholecoiner</h2>
+    <div className="relative min-h-screen w-full overflow-hidden bg-[var(--bg-main)] bg-gradient-to-b from-[var(--bg-main)] via-[#17110b] to-[#120904] text-[var(--text-primary)]">
+      <div className="pointer-events-none absolute inset-0 opacity-80">
+        <div className="hero-gradient" />
+      </div>
+
+      <header className="relative z-20 w-full px-6 pt-6 sm:px-8 md:px-10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/dashboard" className="flex items-center gap-3 text-[var(--text-primary)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)] text-[#0d0804] font-bold shadow-[0_12px_40px_rgba(255,159,28,0.25)]">
+              <svg className="h-4 w-4" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  clipRule="evenodd"
+                  d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z"
+                  fill="currentColor"
+                  fillRule="evenodd"
+                />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold tracking-tight sm:text-base">Wholecoiner</span>
+          </Link>
+
+          <nav className="flex items-center gap-5 text-xs uppercase tracking-[0.24em] text-[var(--text-secondary)]">
+            <Link href="/dashboard" className="hover:text-[var(--accent)] transition-colors">
+              Dashboard
             </Link>
+            <span className="text-[var(--text-primary)]">Goals</span>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex flex-col text-right text-[10px] uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+              <span>Goal builder</span>
+              <span className="text-[var(--accent)]">Create</span>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-[#22160d]">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt="Profile avatar" className="h-10 w-10 rounded-full object-cover" />
+              ) : (
+                <span className="text-sm font-semibold text-[var(--accent)]">
+                  {user?.email?.address?.[0]?.toUpperCase() ||
+                    user?.linkedAccounts?.[0]?.address?.[0]?.toUpperCase() ||
+                    'U'}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="hidden md:flex flex-1 justify-end gap-8">
-            <div className="flex items-center gap-9">
-              <Link href="/dashboard" className="text-white/70 hover:text-white transition-colors text-sm font-medium leading-normal">
-                Dashboard
-              </Link>
-              <Link href="/goals" className="text-white text-sm font-medium leading-normal">
+        </div>
+      </header>
+
+      <main className="relative z-10 w-full">
+        <div className="mx-auto max-w-6xl px-6 pb-16 pt-12 sm:px-8 md:px-10">
+          <section className="rounded-3xl border border-[#292018] bg-[#17110b]/85 p-6 shadow-[0_30px_100px_rgba(0,0,0,0.65)] backdrop-blur-sm sm:p-8">
+            <nav className="flex items-center gap-3 text-[10px] uppercase tracking-[0.32em] text-[var(--text-secondary)]">
+              <Link href="/goals" className="hover:text-[var(--accent)] transition-colors">
                 Goals
               </Link>
-              <a href="#" className="text-white/70 hover:text-white transition-colors text-sm font-medium leading-normal">
-                Portfolio
-              </a>
-              <a href="#" className="text-white/70 hover:text-white transition-colors text-sm font-medium leading-normal">
-                Reports
-              </a>
-            </div>
-            <div className="flex gap-2">
-              <button className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-primary text-[#221b11] text-sm font-bold leading-normal tracking-[0.015em]">
-                <span className="truncate">Add Transaction</span>
-              </button>
-              <button className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 bg-[#483923] text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
-                <span className="material-symbols-outlined text-xl">notifications</span>
-              </button>
-              <button className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 bg-[#483923] text-white gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
-                <span className="material-symbols-outlined text-xl">toggle_on</span>
-              </button>
-            </div>
-            {avatarUrl ? (
-              <div 
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" 
-                data-alt="User avatar image" 
-                style={{ backgroundImage: `url("${avatarUrl}")` }}
-              ></div>
-            ) : (
-              <div className="bg-primary/20 rounded-full size-10 flex items-center justify-center text-primary font-bold text-sm">
-                {user?.email?.address?.[0]?.toUpperCase() || user?.linkedAccounts?.[0]?.address?.[0]?.toUpperCase() || 'U'}
-              </div>
-            )}
-          </div>
-        </header>
+              <span>•</span>
+              <span className="text-[var(--text-primary)]">Create</span>
+            </nav>
 
-        <main className="px-4 sm:px-10 lg:px-40 flex flex-1 justify-center py-5">
-          <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
-            {/* Breadcrumbs */}
-            <div className="flex flex-wrap gap-2 p-4">
-              <Link href="/goals" className="text-[#c9b292] text-base font-medium leading-normal hover:text-white">
-                Goals
-              </Link>
-              <span className="text-[#c9b292] text-base font-medium leading-normal">/</span>
-              <span className="text-white text-base font-medium leading-normal">Create New Goal</span>
-            </div>
-
-            {/* PageHeading */}
-            <div className="flex flex-wrap justify-between gap-3 p-4">
-              <p className="text-white text-4xl font-black leading-tight tracking-[-0.033em] min-w-72">
-                Create a New Investment Goal
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-8 mt-6">
-              {/* Step 1: Cryptocurrency Selection */}
-              <div className="flex flex-col gap-3">
-                <h1 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 text-left">
-                  What are you saving for?
+            <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+              <div className="space-y-4">
+                <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
+                  Build the path to your next whole coin.
                 </h1>
-                <div className="flex px-4 py-3">
-                  <div className="flex w-full h-10 items-center justify-center rounded-full bg-[#483923] p-1">
-                    {['BTC', 'ETH', 'SOL'].map((coin) => (
-                      <label
-                        key={coin}
-                        className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-full px-2 transition-colors ${
-                          formData.coin === coin
-                            ? 'bg-[#221a10] shadow-[0_0_4px_rgba(0,0,0,0.1)] text-white'
-                            : 'text-[#c9b292]'
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Choose a coin, set the finish line, and we’ll pace the journey. Every contribution stacks momentum toward your {formData.coin} target.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-4 rounded-2xl border border-[#292018] bg-[#150e08] p-6 shadow-[0_18px_70px_rgba(0,0,0,0.45)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[0.62rem] uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                    Current price
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                    Auto-refreshed
+                  </span>
+                </div>
+                <div className="text-3xl font-semibold text-[var(--text-primary)]">
+                  {coinPriceUSD ? formatCurrency(coinPriceUSD) : '—'}
+                </div>
+                <p className="text-xs text-[var(--text-secondary)]">
+                  Latest {formData.coin} spot price powers your completion estimate. Adjust contributions to see the timeline update.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <form onSubmit={handleSubmit} className="mt-10 grid gap-6">
+            <section className="rounded-3xl border border-[#292018] bg-[#17110b]/85 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
+              <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[0.62rem] uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                    Step 1
+                  </p>
+                  <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Choose your asset</h2>
+                </div>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  Focus on one race—switch assets later if needed.
+                </span>
+              </header>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {COIN_OPTIONS.map((option) => {
+                  const isActive = formData.coin === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, coin: option.value })}
+                      className={`group flex h-full flex-col justify-between rounded-2xl border p-5 text-left transition-all duration-200 ${
+                        isActive
+                          ? 'border-[var(--accent)] bg-[#1f150c] shadow-[0_18px_60px_rgba(255,159,28,0.15)]'
+                          : 'border-[#2a2016] bg-[#140d08] hover:border-[var(--accent)]/50 hover:bg-[#1a120a]'
+                      }`}
+                      aria-pressed={isActive}
+                    >
+                      <span className="text-[0.7rem] uppercase tracking-[0.32em] text-[var(--text-secondary)]">
+                        {option.value}
+                      </span>
+                      <div className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
+                        {option.label}
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--text-secondary)]">{option.caption}</p>
+                      <span
+                        className={`mt-4 inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.26em] transition-colors ${
+                          isActive ? 'bg-[var(--accent)]/15 text-[var(--accent)]' : 'bg-[#22160d] text-[var(--text-secondary)]'
                         }`}
                       >
-                        <span className="truncate text-sm font-medium leading-normal">{coin}</span>
-                        <input
-                          className="invisible w-0"
-                          name="coin"
-                          type="radio"
-                          value={coin}
-                          checked={formData.coin === coin}
-                          onChange={(e) => setFormData({ ...formData, coin: e.target.value })}
-                        />
-                      </label>
-                    ))}
+                        {isActive ? 'Selected' : 'Tap to select'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-[#292018] bg-[#17110b]/85 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
+              <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[0.62rem] uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                    Step 2
+                  </p>
+                  <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Set the finish line</h2>
+                </div>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  Aim for the amount that makes your story brag-worthy.
+                </span>
+              </header>
+
+              <div className="mt-6 grid gap-6 md:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm text-[var(--text-secondary)]">
+                  Goal name
+                  <input
+                    id="goal-name"
+                    value={goalName}
+                    readOnly
+                    className="h-12 rounded-full border border-[#292018] bg-[#150e08] px-5 text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/60"
+                  />
+                  <span className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-secondary)]/70">
+                    Auto-generated from your asset
+                  </span>
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm text-[var(--text-secondary)]">
+                  Target amount
+                  <div className="relative">
+                    <input
+                      id="target-amount"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={formData.targetAmount}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          targetAmount: parseFloat(e.target.value) || 0
+                        })
+                      }
+                      required
+                      placeholder="1.0"
+                      className="h-12 w-full rounded-full border border-[#292018] bg-[#150e08] pl-5 pr-16 text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/60"
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-5 flex items-center text-xs uppercase tracking-[0.24em] text-[var(--text-secondary)]">
+                      coins
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-[#292018] bg-[#17110b]/85 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
+              <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[0.62rem] uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                    Step 3
+                  </p>
+                  <h2 className="text-2xl font-semibold text-[var(--text-primary)]">Design your cadence</h2>
+                </div>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  Micro-investing keeps momentum alive.
+                </span>
+              </header>
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                <div className="flex flex-col gap-4">
+                  <span className="text-xs uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                    Investment frequency
+                  </span>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {FREQUENCY_OPTIONS.map((freq) => {
+                      const isActive = formData.frequency === freq.value;
+                      return (
+                        <button
+                          key={freq.value}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, frequency: freq.value })}
+                          className={`flex h-full flex-col items-start gap-2 rounded-2xl border p-4 text-left transition ${
+                            isActive
+                              ? 'border-[var(--accent)] bg-[#1f150c] text-[var(--text-primary)] shadow-[0_18px_60px_rgba(255,159,28,0.15)]'
+                              : 'border-[#2a2016] bg-[#140d08] text-[var(--text-secondary)] hover:border-[var(--accent)]/40 hover:text-[var(--text-primary)]'
+                          }`}
+                          aria-pressed={isActive}
+                        >
+                          <span className="text-sm font-semibold uppercase tracking-[0.24em]">
+                            {freq.label}
+                          </span>
+                          <span className="text-xs text-[var(--text-secondary)]/80">{freq.helper}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
 
-              {/* Step 2: Goal Details */}
-              <div className="flex flex-col gap-3">
-                <h1 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 text-left">
-                  Let's get the details
-                </h1>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 py-3">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[#c9b292] text-sm font-medium ml-3" htmlFor="goal-name">
-                      Goal Name
-                    </label>
+                <label className="flex flex-col gap-3 rounded-2xl border border-[#292018] bg-[#150e08] p-5 text-sm text-[var(--text-secondary)]">
+                  Amount per interval (USDC)
+                  <div className="relative">
+                    <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--text-secondary)]">$</span>
                     <input
-                      className="w-full h-12 px-4 bg-[#483923] text-white rounded-full border-2 border-transparent focus:border-primary focus:ring-0 placeholder:text-white/50 transition-colors"
-                      id="goal-name"
-                      type="text"
-                      value={goalName}
-                      readOnly
+                      id="amount-inr"
+                      type="number"
+                      step="10"
+                      min="10"
+                      value={formData.amountInr}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          amountInr: parseFloat(e.target.value) || 0
+                        })
+                      }
+                      required
+                      className="h-12 w-full rounded-full border border-[#392715] bg-[#1a120a] pl-8 pr-4 text-sm text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/60"
                     />
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[#c9b292] text-sm font-medium ml-3" htmlFor="target-amount">
-                      Target Amount
-                    </label>
-                    <div className="relative">
-                      <input
-                        className="w-full h-12 pl-4 pr-16 bg-[#483923] text-white rounded-full border-2 border-transparent focus:border-primary focus:ring-0 placeholder:text-white/50 transition-colors"
-                        id="target-amount"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        value={formData.targetAmount}
-                        onChange={(e) => setFormData({ ...formData, targetAmount: parseFloat(e.target.value) || 0 })}
-                        required
-                        placeholder="1.0"
-                      />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 text-sm pointer-events-none">coins</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 py-3">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[#c9b292] text-sm font-medium ml-3" htmlFor="frequency">
-                      Investment Frequency
-                    </label>
-                    <div className="flex w-full h-12 items-center justify-center rounded-full bg-[#483923] p-1">
-                      {[
-                        { value: 'DAILY', label: 'Daily' },
-                        { value: 'WEEKLY', label: 'Weekly' },
-                        { value: 'MONTHLY', label: 'Monthly' }
-                      ].map((freq) => (
-                        <label
-                          key={freq.value}
-                          className={`flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-full px-2 transition-colors ${
-                            formData.frequency === freq.value
-                              ? 'bg-[#221a10] shadow-[0_0_4px_rgba(0,0,0,0.1)] text-white'
-                              : 'text-[#c9b292]'
-                          }`}
-                        >
-                          <span className="truncate text-sm font-medium leading-normal">{freq.label}</span>
-                          <input
-                            className="invisible w-0"
-                            name="frequency"
-                            type="radio"
-                            value={freq.value}
-                            checked={formData.frequency === freq.value}
-                            onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[#c9b292] text-sm font-medium ml-3" htmlFor="amount-inr">
-                      Amount per Interval (USDC)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute inset-y-0 left-4 flex items-center text-white/50">$</span>
-                      <input
-                        className="w-full h-12 pl-8 pr-4 bg-[#483923] text-white rounded-full border-2 border-transparent focus:border-primary focus:ring-0 placeholder:text-white/50 transition-colors"
-                        id="amount-inr"
-                        type="number"
-                        step="10"
-                        min="10"
-                        value={formData.amountInr}
-                        onChange={(e) => setFormData({ ...formData, amountInr: parseFloat(e.target.value) || 0 })}
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-[#c9b292] ml-3 mt-1">Minimum 10 USDC</p>
-                  </div>
-                </div>
+                  <span className="text-[10px] uppercase tracking-[0.24em] text-[var(--text-secondary)]/70">
+                    Minimum 10 USDC per interval
+                  </span>
+                </label>
               </div>
+            </section>
 
-              {/* Step 3: Estimated Completion Time */}
-              <div className="flex flex-col gap-3">
-                <h1 className="text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 text-left">
-                  Estimated Completion Time
-                </h1>
-                <div className="px-4 py-3">
-                  <div className="flex flex-col gap-4 rounded-xl bg-[#483923] p-6">
-                    {loadingEstimate ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                        <span className="ml-3 text-[#c9b292] text-sm">Calculating...</span>
-                      </div>
-                    ) : estimatedCompletion?.error ? (
-                      <div className="flex flex-col gap-2">
-                        <div className="text-red-400 text-sm font-medium">
-                          ⚠️ {estimatedCompletion.error}
-                        </div>
-                        <div className="text-[#c9b292] text-xs mt-2">
-                          Please adjust your target amount or investment frequency. Maximum goal duration is 10 years.
-                        </div>
-                        {estimatedCompletion.totalCostUSD && (
-                          <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#221a10]">
-                            <span className="text-[#c9b292] text-sm font-medium">Total Cost</span>
-                            <span className="text-white text-lg font-bold">
-                              ${estimatedCompletion.totalCostUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ) : estimatedCompletion ? (
-                      <>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#c9b292] text-sm font-medium">Estimated Time</span>
-                          <span className="text-white text-lg font-bold">
-                            {formatDuration(estimatedCompletion.monthsToComplete, estimatedCompletion.daysToComplete)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#c9b292] text-sm font-medium">Target Date</span>
-                          <span className="text-white text-lg font-bold">
-                            {formatDate(estimatedCompletion.estimatedDate)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#c9b292] text-sm font-medium">Total Investment</span>
-                          <span className="text-white text-lg font-bold">
-                            ${estimatedCompletion.totalCostUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#c9b292] text-sm font-medium">Number of Investments</span>
-                          <span className="text-white text-lg font-bold">
-                            {estimatedCompletion.intervalsNeeded}
-                          </span>
-                        </div>
-                        {coinPriceUSD && (
-                          <div className="mt-2 pt-4 border-t border-[#221a10]">
-                            <span className="text-[#c9b292] text-xs">
-                              Based on current {formData.coin} price: ${coinPriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per coin
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-center py-8">
-                        <span className="text-[#c9b292] text-sm">
-                          Enter goal details above to see estimated completion time
+            <section className="rounded-3xl border border-[#292018] bg-[#17110b]/85 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:p-8">
+              <header className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[0.62rem] uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                    Step 4
+                  </p>
+                  <h2 className="text-2xl font-semibold text-[var(--text-primary)]">
+                    Preview your runway
+                  </h2>
+                </div>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  Estimates update as you tweak the plan.
+                </span>
+              </header>
+
+              <div className="mt-6 rounded-2xl border border-[#292018] bg-[#150e08] p-6">
+                {loadingEstimate ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-10">
+                    <div className="h-10 w-10 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
+                    <span className="text-sm text-[var(--text-secondary)]">Crunching the numbers…</span>
+                  </div>
+                ) : estimatedCompletion?.error ? (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-red-500/40 bg-red-900/20 p-4 text-sm text-red-300">
+                      {estimatedCompletion.error}. Please adjust your target or cadence (maximum duration is 10 years).
+                    </div>
+                    {estimatedCompletion.totalCostUSD && (
+                      <div className="flex items-center justify-between rounded-2xl border border-[#292018] bg-[#1a120a] p-4">
+                        <span className="text-xs uppercase tracking-[0.24em] text-[var(--text-secondary)]">
+                          Total investment required
+                        </span>
+                        <span className="text-lg font-semibold text-[var(--text-primary)]">
+                          {formatCurrency(estimatedCompletion.totalCostUSD)}
                         </span>
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
+                ) : estimatedCompletion ? (
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-[0.26em] text-[var(--text-secondary)]">
+                        Estimated timeline
+                      </p>
+                      <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                        {formatDuration(
+                          estimatedCompletion.monthsToComplete,
+                          estimatedCompletion.daysToComplete
+                        )}
+                      </p>
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        You’ll cross the finish line around{' '}
+                        <span className="text-[var(--text-primary)] font-medium">
+                          {formatDate(estimatedCompletion.estimatedDate)}
+                        </span>
+                        .
+                      </p>
+                    </div>
 
-              {/* Error Display */}
-              {error && (
-                <div className="px-4">
-                  <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-full text-sm">
-                    {error}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between rounded-2xl border border-[#292018] bg-[#1a120a] p-4">
+                        <span className="text-xs uppercase tracking-[0.24em] text-[var(--text-secondary)]">
+                          Total investment
+                        </span>
+                        <span className="text-lg font-semibold text-[var(--text-primary)]">
+                          {formatCurrency(estimatedCompletion.totalCostUSD)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-2xl border border-[#292018] bg-[#1a120a] p-4">
+                        <span className="text-xs uppercase tracking-[0.24em] text-[var(--text-secondary)]">
+                          Contributions needed
+                        </span>
+                        <span className="text-lg font-semibold text-[var(--text-primary)]">
+                          {estimatedCompletion.intervalsNeeded}
+                        </span>
+                      </div>
+                    </div>
+
+                    {coinPriceUSD && (
+                      <div className="sm:col-span-2 rounded-2xl border border-[#292018] bg-[#1a120a] p-4 text-xs text-[var(--text-secondary)]">
+                        Based on the current {formData.coin} price of{' '}
+                        <span className="text-[var(--text-primary)] font-medium">
+                          {formatCurrency(coinPriceUSD)}
+                        </span>
+                        . Your timeline adapts automatically as the market moves.
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-[var(--text-secondary)]">
+                    <span>Fill in your target and cadence to preview milestones.</span>
+                  </div>
+                )}
+              </div>
+            </section>
 
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-4 p-4 mt-8 border-t border-solid border-[#483923]">
+            {error && (
+              <div className="rounded-3xl border border-red-500/30 bg-red-900/20 p-5 text-sm text-red-200 shadow-[0_20px_70px_rgba(0,0,0,0.45)]">
+                {error}
+              </div>
+            )}
+
+            <section className="flex flex-col gap-4 rounded-3xl border border-[#292018] bg-[#17110b]/85 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:flex-row sm:items-center sm:justify-between sm:p-8">
+              <div className="text-xs text-[var(--text-secondary)]">
+                By creating this goal you agree to our stacking cadence and understand that market prices can shift the completion date.
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <button
                   type="button"
-                  onClick={() => router.push('/goals')}
-                  className="text-[#c9b292] text-sm font-bold leading-normal tracking-[0.015em] hover:text-white transition-colors"
+                  onClick={handleSaveDraft}
+                  disabled={savingDraft || loading}
+                  className="btn-ghost h-11 px-6 text-sm font-semibold uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Save as Draft
+                  {savingDraft ? (
+                    <span className="flex items-center gap-2">
+                      <span className="inline-flex h-3.5 w-3.5 items-center justify-center">
+                        <span className="h-full w-full rounded-full border border-[var(--accent)] border-t-transparent animate-spin" />
+                      </span>
+                      Saving…
+                    </span>
+                  ) : (
+                    'Save as draft'
+                  )}
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="flex min-w-[120px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-primary text-[#221b11] text-base font-bold leading-normal tracking-[0.015em] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                  disabled={loading || loadingEstimate}
+                  className="btn-primary flex h-11 items-center justify-center px-8 text-sm font-semibold uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <span className="truncate">{loading ? 'Creating...' : 'Create Goal'}</span>
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="inline-flex h-4 w-4 items-center justify-center">
+                        <span className="h-full w-full rounded-full border-2 border-[#0d0804] border-t-transparent animate-spin" />
+                      </span>
+                      Creating…
+                    </span>
+                  ) : (
+                    'Create goal'
+                  )}
                 </button>
               </div>
-            </form>
-          </div>
-        </main>
-      </div>
+            </section>
+          </form>
+        </div>
+      </main>
     </div>
   );
 }

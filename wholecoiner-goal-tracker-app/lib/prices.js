@@ -9,16 +9,16 @@ import { POPULAR_TOKENS, getPopularToken, isPopularToken } from './popular-token
 
 // Mock prices as fallback (USD)
 const MOCK_PRICES_USD = {
-  BTC: 60000,
-  ETH: 3000,
-  SOL: 145,
-  USDC: 1,
-  USDT: 1,
-  JUP: 1.2,
-  RAY: 3.5,
-  BONK: 0.00003,
-  WIF: 2.8,
-  PYTH: 0.45
+  BTC: 106398.0,
+  ETH: 3610.75,
+  SOL: 168.67,
+  USDC: 0.03754618,
+  USDT: 1.0,
+  JUP: 0.00075262,
+  RAY: 1.59,
+  BONK: 0.00001338,
+  WIF: 0.491672,
+  PYTH: 0.10905
 };
 
 // Cache layer with per-token TTL

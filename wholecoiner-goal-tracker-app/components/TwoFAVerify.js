@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import PINIndicator from './PINIndicator';
 import NumericKeypad from './NumericKeypad';
 
 /**
@@ -15,6 +14,7 @@ export default function TwoFAVerify({ onSuccess, onLocked }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [remainingAttempts, setRemainingAttempts] = useState(5);
+  const hiddenInputRef = useRef(null);
 
   const handleSubmit = async () => {
     setError('');
@@ -99,52 +99,92 @@ export default function TwoFAVerify({ onSuccess, onLocked }) {
     }
   };
 
-  return (
-    <div className="flex w-full max-w-sm flex-col items-center rounded-lg p-4 text-center">
-      {/* Header Text */}
-      <h1 className="text-3xl font-bold tracking-tight text-white">
-        Two-Factor Authentication
-      </h1>
-      <p className="mt-2 text-base text-white">
-        Enter the 6-digit code from your authenticator app.
-      </p>
+  const handleKeyDown = (e) => {
+    if (loading) return;
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      handleDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      handleBackspace();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
 
-      {/* PIN Input Indicators */}
-      <div className="mt-8">
-        <PINIndicator value={pin} />
+  useEffect(() => {
+    hiddenInputRef.current?.focus();
+  }, []);
+
+  return (
+    <div className="bg-[#17110b]/95 border border-[#292018] rounded-3xl px-6 py-7 shadow-[0_32px_120px_rgba(0,0,0,0.85)] backdrop-blur-sm">
+      <div className="flex flex-col items-center text-center gap-2">
+        <p className="text-[10px] tracking-[0.2em] uppercase text-[var(--text-secondary)]">
+          Security Checkpoint
+        </p>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--text-primary)]">
+          Enter your pin
+        </h1>
+        <p className="text-sm sm:text-base text-[var(--text-secondary)] max-w-sm">
+          Because your progress deserves real protection.
+        </p>
       </div>
 
-      {/* Feedback Message */}
+      <div className="mt-6 flex justify-center gap-3">
+        {Array.from({ length: 6 }).map((_, i) => {
+          const filled = i < pin.length;
+          return (
+            <div
+              key={i}
+              className={[
+                'w-8 h-8 sm:w-10 sm:h-10 rounded-xl border flex items-center justify-center transition-all duration-200',
+                filled
+                  ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
+                  : 'border-[var(--border-subtle)] bg-transparent text-[#4a3d30]',
+              ].join(' ')}
+              aria-hidden="true"
+            >
+              {filled ? '•' : ''}
+            </div>
+          );
+        })}
+      </div>
+
       {error && (
-        <p className="mt-4 h-6 text-sm text-error">
+        <p className="mt-4 text-sm text-red-400 animate-[shake_0.25s_ease-in-out]">
           {error}
         </p>
       )}
       {!error && remainingAttempts < 5 && remainingAttempts > 0 && (
-        <p className="mt-4 h-6 text-sm text-muted-light dark:text-muted-dark">
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">
           {remainingAttempts} {remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining
         </p>
       )}
       {!error && remainingAttempts === 5 && (
-        <p className="mt-4 h-6"></p>
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">
+          Didn&apos;t receive a code?{' '}
+          <button type="button" className="text-[var(--accent)] hover:underline">
+            Resend
+          </button>
+        </p>
       )}
 
-      {/* Numeric Keypad */}
       <NumericKeypad
         onDigit={handleDigit}
         onBackspace={handleBackspace}
         disabled={loading}
       />
 
-      {/* Helper Links */}
-      <div className="mt-8">
-        <p className="text-sm text-white">
-          Didn't receive a code?{' '}
-          <a className="font-semibold text-primary hover:underline" href="#">
-            Resend
-          </a>
-        </p>
-      </div>
+      <input
+        ref={hiddenInputRef}
+        value={pin}
+        onChange={() => {}}
+        onKeyDown={handleKeyDown}
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        className="opacity-0 pointer-events-none h-0 w-0"
+      />
     </div>
   );
 }
