@@ -4,101 +4,103 @@ import LoginButton from '@/components/LoginButton';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header - Minimal, clean */}
-      <header className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between py-6">
+    <div className="relative flex min-h-screen flex-col bg-[var(--bg-main)] text-[var(--text-primary)]">
+      <header className="relative z-20 px-6 py-6 sm:px-8 md:px-12">
+        <nav className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo - Simple geometric shape */}
-            <svg 
-              className="h-6 w-6 text-gray-900 dark:text-white" 
-              fill="none" 
-              viewBox="0 0 48 48" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path 
-                clipRule="evenodd" 
-                d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" 
-                fill="currentColor" 
-                fillRule="evenodd"
-              />
-            </svg>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent)] text-[#0d0804] font-bold">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 48 48"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  clipRule="evenodd"
+                  d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z"
+                  fill="currentColor"
+                  fillRule="evenodd"
+                />
+              </svg>
+            </div>
+            <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: 'var(--font-headline)' }}>
               Wholecoiner
-            </h2>
+            </span>
           </div>
-          {/* Login button in header - Fitts's Law: large tap area */}
-          <div className="flex h-10 min-w-[84px]">
+          <div className="hidden items-center gap-3 text-sm font-medium md:flex">
+            <button className="btn-ghost">Log in</button>
+            <button className="btn-primary">Get Started</button>
+          </div>
+          <div className="md:hidden">
             <LoginButton variant="header" />
           </div>
-        </div>
+        </nav>
       </header>
 
-      {/* Main Content - Designer split hero */}
-      <main className="flex flex-1 items-center justify-center px-4 sm:px-6 lg:px-8 xl:px-16">
-        <div className="relative w-full max-w-6xl">
-          <div className="pointer-events-none absolute inset-y-[-12%] left-[-12%] hidden w-1/2 max-w-3xl rounded-full bg-primary/12 blur-[120px] lg:block" />
-          <section className="relative grid gap-10 rounded-3xl bg-[#1d160d]/85 p-8 shadow-[0_30px_80px_-45px_rgba(0,0,0,0.7)] backdrop-blur-sm sm:p-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.7fr)] xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.6fr)]">
-            <div className="flex flex-col justify-center gap-6 text-left">
-              <div className="space-y-4">
-                <p className="text-xs uppercase tracking-[0.42em] text-white/35">
-                  Wholecoiner wealth framework
-                </p>
-                <h1 className="text-[clamp(2.9rem,7vw,5.8rem)] font-black uppercase leading-[0.96] tracking-[0.15em] text-white drop-shadow-[0_12px_45px_rgba(0,0,0,0.32)]">
-                  1.0 Is the New Flex.
-                </h1>
-                <p className="max-w-xl text-[clamp(1rem,2.1vw,1.4rem)] font-medium text-white/70 leading-relaxed">
-                  Make your portfolio tell a story worth bragging about as you build toward one whole coin of your chosen crypto with smart, consistent investing.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-4 text-[0.7rem] uppercase tracking-[0.3em] text-white/45">
-                <span>Smart pacing nudges</span>
-                <span className="hidden h-3 w-px bg-white/12 lg:block" />
-                <span>Progress you can feel</span>
-                <span className="hidden h-3 w-px bg-white/12 lg:block" />
-                <span>Celebrate every milestone</span>
-              </div>
+      <main className="relative flex flex-1 items-center justify-center px-6 py-12 sm:px-8 sm:py-16 md:px-12">
+        <div className="hero-gradient hidden md:block" />
+        <div className="relative z-10 grid w-full max-w-6xl grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
+          <section className="space-y-6 text-center lg:col-span-7 lg:text-left">
+            <div className="space-y-4">
+              <p className="text-[0.68rem] uppercase tracking-[0.32em] text-[var(--text-secondary)]">
+                Wholecoiner Wealth Framework
+              </p>
+              <h1
+                className="text-[clamp(2.75rem,6vw,5.5rem)] font-black uppercase leading-[0.96] tracking-[0.12em]"
+                style={{ fontFamily: 'var(--font-headline)' }}
+              >
+                1.0 Is the New Flex.
+              </h1>
+              <p className="max-w-xl text-[clamp(1rem,1.9vw,1.35rem)] text-[var(--text-secondary)] leading-relaxed">
+                Wholecoiner helps you track your path to a full Bitcoin with clarity, discipline, and control. Make your portfolio tell a story worth bragging about.
+              </p>
             </div>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-[0.68rem] uppercase tracking-[0.28em] text-[var(--text-secondary)] lg:justify-start">
+              <span>Progress you can feel</span>
+              <span className="hidden h-3 w-px bg-white/15 lg:block" />
+              <span>Celebrate every milestone</span>
+            </div>
+          </section>
 
-            <aside className="mx-auto flex w-full max-w-[280px] flex-col gap-5 rounded-2xl border border-white/12 bg-[#231a10]/92 p-6 text-left shadow-[0_22px_55px_-35px_rgba(0,0,0,0.68)] sm:max-w-[320px]">
-              <div className="space-y-2">
-                <p className="text-[0.62rem] uppercase tracking-[0.36em] text-white/45">
+          <aside className="flex justify-center lg:col-span-5 lg:justify-end">
+            <div className="elevated-card w-full max-w-sm space-y-6 sm:max-w-md">
+              <div className="space-y-3">
+                <p className="text-[0.62rem] uppercase tracking-[0.32em] text-[var(--text-secondary)]">
                   Join the run
                 </p>
-                <h2 className="text-[1.6rem] font-bold text-white tracking-tight">
+                <h2 className="text-[1.6rem] font-semibold" style={{ fontFamily: 'var(--font-headline)' }}>
                   Sign in to stay on pace
                 </h2>
-                <p className="text-sm leading-6 text-white/60">
+                <p className="text-sm text-[var(--text-secondary)] leading-6">
                   We’ll create your wallet, protect it, and manage every step for you.
                 </p>
               </div>
               <LoginButton variant="hero" />
-            </aside>
-          </section>
+              <div className="text-xs text-[var(--text-secondary)]">
+                New here?{' '}
+                <a className="font-semibold hover:underline" href="#">
+                  Learn how it works
+                </a>
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
 
-      {/* Footer - Minimal, unobtrusive */}
-      <footer className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-center gap-6 py-8 text-sm text-gray-500 dark:text-gray-400">
-          <a 
-            className="hover:text-primary transition-colors" 
-            href="#"
-          >
-            Terms of Service
-          </a>
-          <a 
-            className="hover:text-primary transition-colors" 
-            href="#"
-          >
-            Privacy Policy
-          </a>
-          <a 
-            className="hover:text-primary transition-colors" 
-            href="#"
-          >
-            Support
-          </a>
+      <footer className="w-full border-t border-[var(--border-subtle)] bg-[var(--bg-main)]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6 text-xs text-[var(--text-secondary)] sm:px-8 md:px-12">
+          <p>© {new Date().getFullYear()} Wholecoiner. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <a className="hover:text-[var(--accent)] transition-colors" href="#">
+              Terms of Service
+            </a>
+            <a className="hover:text-[var(--accent)] transition-colors" href="#">
+              Privacy Policy
+            </a>
+            <a className="hover:text-[var(--accent)] transition-colors" href="#">
+              Support
+            </a>
+          </div>
         </div>
       </footer>
     </div>

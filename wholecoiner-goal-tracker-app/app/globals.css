@@ -1,56 +1,115 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ec9213;
-  --color-background-light: #f8f7f6;
-  --color-background-dark: #221a10;
-  --font-display: Inter, sans-serif;
+  --color-bg-main: #0d0804;
+  --color-bg-elevated: #17110b;
+  --color-bg-hero-halo: #1f150c;
+  --color-accent: #ff9f1c;
+  --color-accent-soft: rgba(246, 166, 35, 0.1);
+  --color-text-primary: #f7f3ec;
+  --color-text-secondary: #c9bfb2;
+  --color-border-subtle: #292018;
+  --font-headline: "Space Grotesk", "Satoshi", "Montserrat", sans-serif;
+  --font-body: "Inter", sans-serif;
 }
 
 :root {
-  --font-inter: 'Inter', sans-serif;
-  --primary: #ec9213;
-  --background-light: #f8f7f6;
-  --background-dark: #221a10;
+  --bg-main: #0d0804;
+  --bg-elevated: #17110b;
+  --bg-hero-halo: #1f150c;
+  --accent: #ff9f1c;
+  --accent-soft: rgba(246, 166, 35, 0.1);
+  --text-primary: #f7f3ec;
+  --text-secondary: #c9bfb2;
+  --border-subtle: #292018;
+  --font-headline: "Space Grotesk", "Satoshi", "Montserrat", sans-serif;
+  --font-body: "Inter", sans-serif;
 }
 
 body {
-  font-family: var(--font-inter), sans-serif;
-  /* Default light background - matches help.txt */
-  background-color: #f8f7f6;
+  font-family: var(--font-body);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* Dark mode background - matches help.txt */
-html.dark body {
-  background-color: #221a10;
-}
-
-/* Smooth transitions for premium feel */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
+  transition-duration: 180ms;
 }
 
-/* Custom color classes */
-.bg-primary {
-  background-color: var(--primary);
+a {
+  transition: color 180ms ease;
 }
 
-.text-primary {
-  color: var(--primary);
+a:hover {
+  color: var(--accent);
 }
 
-.bg-background-light {
-  background-color: var(--background-light);
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
-.bg-background-dark {
-  background-color: var(--background-dark);
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
-.text-background-dark {
-  color: var(--background-dark);
+.btn-primary {
+  background-color: var(--accent);
+  color: #0d0804;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 12px 40px rgba(255, 159, 28, 0.25);
+  transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 18px 50px rgba(255, 159, 28, 0.35);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.btn-ghost {
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  border-radius: 9999px;
+  padding: 0.6rem 1.3rem;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+}
+
+.btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.elevated-card {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  padding: 2rem;
+}
+
+.hero-gradient {
+  position: absolute;
+  inset: -25% -20%;
+  background: radial-gradient(ellipse at center, rgba(255, 159, 28, 0.18), transparent 60%), radial-gradient(ellipse at 30% 30%, rgba(255, 159, 28, 0.12), transparent 55%);
+  filter: blur(80px);
+  opacity: 0.9;
+  pointer-events: none;
 }

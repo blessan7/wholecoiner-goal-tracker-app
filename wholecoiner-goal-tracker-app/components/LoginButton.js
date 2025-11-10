@@ -201,7 +201,7 @@ export default function LoginButton({ variant = 'hero' }) {
       return (
         <button
           onClick={handleLogout}
-          className="flex h-10 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 px-5 text-sm font-medium text-gray-900 dark:text-gray-100 shadow-sm transition-all hover:shadow-md hover:-translate-y-px"
+          className="flex h-10 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full border border-[var(--border-subtle)] bg-transparent px-5 text-sm font-medium text-[var(--text-primary)] transition-all hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] focus-visible:outline-offset-2"
         >
           <span className="truncate">Logout</span>
         </button>
@@ -250,7 +250,7 @@ export default function LoginButton({ variant = 'hero' }) {
       <button
         onClick={handleLogin}
         disabled={isLoading}
-        className="flex h-12 w-full min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-primary px-6 text-base font-bold text-[#221a10] shadow-md transition-all hover:-translate-y-1 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+        className="btn-primary flex h-12 w-full min-w-[84px] items-center justify-center text-base disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? (
           <span className="truncate">Connecting...</span>
