@@ -131,7 +131,9 @@ enum TransactionType {
 enum Provider {
   ONMETA
   JUPITER
+  FAUCET
 }
+
 
 enum Network {
   DEVNET
